@@ -11,11 +11,12 @@ type Props = {
   slack: string;
   onSlackChange: (slack: string) => void;
   onToggleDone: (task: Task) => void;
+  onToggleSubtask: (taskId: string, subtaskIndex: number) => void;
   expandedTaskId: string | null;
   onToggleExpanded: (taskId: string) => void;
 };
 
-export function PlanPanel({ tasks, slack, onSlackChange, onToggleDone, expandedTaskId, onToggleExpanded }: Props) {
+export function PlanPanel({ tasks, slack, onSlackChange, onToggleDone, onToggleSubtask, expandedTaskId, onToggleExpanded }: Props) {
   const [sampleNotice, setSampleNotice] = useState(false);
   return (
     <section className="workspace plan-workspace">
@@ -59,10 +60,23 @@ export function PlanPanel({ tasks, slack, onSlackChange, onToggleDone, expandedT
                 <button className={`priority-check ${task.status === "done" ? "checked" : ""}`} type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
               </div>
               {expanded && <div className="analysis-detail">
-                <p>{task.summary || "概要は登録されていません。"}</p>
-                <strong>進め方の目安</strong>
-                <ul>{task.analysis.subtasks.map((step) => <li key={step}>{step}</li>)}</ul>
-                <p className="analysis-tip">{task.analysis.tip}</p>
+                <section className="analysis-section">
+                  <h3>概要</h3>
+                  <p className="analysis-summary">{task.summary || "概要は登録されていません。"}</p>
+                </section>
+                <section className="analysis-section">
+                  <h3>サブタスク</h3>
+                  <ul className="subtask-list">{task.analysis.subtasks.map((step, subtaskIndex) => <li key={`${task.id}-${step}`}>
+                    <label>
+                      <input className="subtask-checkbox" type="checkbox" checked={task.subtaskProgress?.[subtaskIndex] ?? false} onChange={() => onToggleSubtask(task.id, subtaskIndex)} />
+                      <span>{step}</span>
+                    </label>
+                  </li>)}</ul>
+                </section>
+                <div className="analysis-advice">
+                  <h3>総評 / アドバイス</h3>
+                  <p>{task.analysis.tip}</p>
+                </div>
               </div>}
             </div>
           </article>;

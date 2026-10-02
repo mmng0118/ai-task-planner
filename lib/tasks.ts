@@ -20,6 +20,7 @@ export type Task = {
   summary: string;
   status: TaskStatus;
   analysis: TaskAnalysis;
+  subtaskProgress?: boolean[];
   feedback?: TaskFeedback;
 };
 
@@ -48,9 +49,9 @@ export const initialTasks: Task[] = [
     id: "sample-2",
     title: "参考文献を読む",
     deadline: "2026-10-21",
-    summary: "レポートに使う参考文献を読み、必要な箇所をメモする。",
+    summary: "参考文献を読んでコメントシートにまとめる",
     status: "todo",
-    analysis: { difficulty: 3, estimatedHours: 10, subtasks: ["参考文献を選ぶ", "必要な章を読む", "引用したい箇所をメモする"], tip: "最初に目次を確認し、必要な章から読み進めましょう。" },
+    analysis: { difficulty: 3, estimatedHours: 10, subtasks: ["図書館で本を借りる", "あらすじを1割書く", "本文を7割書く", "結論を2割書く"], tip: "テーマに沿った文献を探すことが、レポートを完成させるためのカギです。" },
   },
   {
     id: "sample-3",

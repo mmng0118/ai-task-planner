@@ -79,6 +79,22 @@ export default function Home() {
     }
   }
 
+  function toggleSubtask(taskId: string, subtaskIndex: number) {
+    setTasks((current) => current.map((task) => {
+      if (task.id !== taskId) return task;
+      const progress = Array.from({ length: task.analysis.subtasks.length }, (_, index) => task.subtaskProgress?.[index] ?? false);
+      progress[subtaskIndex] = !progress[subtaskIndex];
+      return { ...task, subtaskProgress: progress };
+    }));
+  }
+
+  function deleteTask(task: Task) {
+    const confirmed = window.confirm(`「${task.title}」をタスク一覧から削除しますか？\nこの操作は取り消せません。`);
+    if (!confirmed) return;
+    setTasks((current) => current.filter((item) => item.id !== task.id));
+    setExpandedTaskId((current) => current === task.id ? null : current);
+  }
+
   function toggleExpanded(taskId: string) {
     setExpandedTaskId((current) => current === taskId ? null : taskId);
   }
@@ -94,6 +110,7 @@ export default function Home() {
           onQueryChange={setQuery}
           onSubmit={addTask}
           onToggleDone={toggleDone}
+          onDeleteTask={deleteTask}
           expandedTaskId={expandedTaskId}
           onToggleExpanded={toggleExpanded}
         />
@@ -103,6 +120,7 @@ export default function Home() {
           slack={slack}
           onSlackChange={setSlack}
           onToggleDone={toggleDone}
+          onToggleSubtask={toggleSubtask}
           expandedTaskId={expandedTaskId}
           onToggleExpanded={toggleExpanded}
         />

@@ -10,11 +10,12 @@ type Props = {
   onQueryChange: (query: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>, title: string, deadline: string, summary: string) => void;
   onToggleDone: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
   expandedTaskId: string | null;
   onToggleExpanded: (taskId: string) => void;
 };
 
-export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, expandedTaskId, onToggleExpanded }: Props) {
+export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onDeleteTask, expandedTaskId, onToggleExpanded }: Props) {
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState("");
   const [summary, setSummary] = useState("");
@@ -64,8 +65,10 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
                 <button className="task-list-main" type="button" onClick={() => onToggleExpanded(task.id)} aria-expanded={expanded}>
                   <span className="list-task-title">{task.title}</span>
                 </button>
-                <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
-                {expanded && <div className="task-list-detail"><p>{task.summary || "概要は登録されていません。"}</p><span>{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span></div>}
+                <div className="task-actions">
+                  <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
+                </div>
+                {expanded && <div className="task-list-detail"><p>{task.summary || "概要は登録されていません。"}</p><span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span><span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span><div className="task-delete-row"><button className="task-delete" type="button" aria-label={`${task.title}を削除する`} onClick={() => onDeleteTask(task)}><span aria-hidden="true">−</span></button></div></div>}
               </article>;
             })}
             {tasks.length === 0 && <p className="empty-state">該当するタスクはありません</p>}
