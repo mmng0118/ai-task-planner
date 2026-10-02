@@ -38,27 +38,35 @@ export function createPlaceholderAnalysis(summary: string): TaskAnalysis {
 export const initialTasks: Task[] = [
   {
     id: "sample-1",
-    title: "生物のレポート",
-    deadline: "2026-10-06",
-    summary: "授業で扱った生態系について、参考文献を2つ以上使って考察する。",
+    title: "レポートを提出する",
+    deadline: "2026-10-14",
+    summary: "授業で扱ったテーマについて、参考文献を使ってレポートを書く。",
     status: "todo",
-    analysis: { difficulty: 3, estimatedHours: 4, subtasks: ["テーマを決める", "参考文献を探す", "考察を書いて見直す"], tip: "参考文献探しに時間がかかりそう。先に候補を3つ集めよう。" },
+    analysis: { difficulty: 4, estimatedHours: 5, subtasks: ["課題の条件を確認する", "参考文献を探す", "構成を作って執筆する"], tip: "先に構成を決めてから書き始めると、スムーズに進められます。" },
   },
   {
     id: "sample-2",
-    title: "数学の問題集 p.42〜48",
-    deadline: "2026-10-03",
-    summary: "二次関数の章末問題。わからない問題には印をつける。",
+    title: "参考文献を読む",
+    deadline: "2026-10-21",
+    summary: "レポートに使う参考文献を読み、必要な箇所をメモする。",
     status: "todo",
-    analysis: { difficulty: 4, estimatedHours: 3, subtasks: ["例題を読み直す", "問題を解く", "間違いを解き直す"], tip: "全部を一気に解かず、2ページずつ休憩を入れると進めやすいよ。" },
+    analysis: { difficulty: 3, estimatedHours: 10, subtasks: ["参考文献を選ぶ", "必要な章を読む", "引用したい箇所をメモする"], tip: "最初に目次を確認し、必要な章から読み進めましょう。" },
   },
   {
     id: "sample-3",
-    title: "英単語チェック",
-    deadline: "2026-10-10",
-    summary: "Unit 5 の単語を覚えて、小テストに備える。",
+    title: "小テストの勉強をする",
+    deadline: "2026-10-07",
+    summary: "次回の小テスト範囲を復習し、間違えた問題を解き直す。",
     status: "todo",
-    analysis: { difficulty: 2, estimatedHours: 2, subtasks: ["単語をざっと確認", "苦手な単語に印をつける", "翌日にもう一度テスト"], tip: "短い時間でも、日を分けて見直すと覚えやすいよ。" },
+    analysis: { difficulty: 3, estimatedHours: 2, subtasks: ["テスト範囲を確認する", "問題を解いて苦手を探す", "間違いを解き直す"], tip: "短時間でも問題を解いて確認すると、苦手な箇所が見つかります。" },
+  },
+  {
+    id: "sample-4",
+    title: "教科書の予習",
+    deadline: "2026-10-15",
+    summary: "次回の授業範囲を読み、わからない言葉を調べる。",
+    status: "todo",
+    analysis: { difficulty: 2, estimatedHours: 1, subtasks: ["授業範囲を読む", "重要語句を確認する", "疑問点をメモする"], tip: "分からないところに印をつけておけば、授業中に確認できます。" },
   },
 ];
 
@@ -71,4 +79,9 @@ export function daysUntil(date: string) {
 
 export function formatDeadline(date: string) {
   return new Intl.DateTimeFormat("ja-JP", { month: "long", day: "numeric", weekday: "short" }).format(new Date(`${date}T00:00:00`));
+}
+
+export function formatShortDate(date: string) {
+  const [, month, day] = date.split("-").map(Number);
+  return `${month}/${day}`;
 }

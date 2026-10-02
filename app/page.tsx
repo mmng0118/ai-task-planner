@@ -1,171 +1,119 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
-import { createPlaceholderAnalysis, daysUntil, formatDeadline, initialTasks, type Task } from "../lib/tasks";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { CompletionDialog } from "../components/CompletionDialog";
+import { PlannerSidebar, type PlannerScreen } from "../components/PlannerSidebar";
+import { PlanPanel } from "../components/PlanPanel";
+import { TaskEntryPanel } from "../components/TaskEntryPanel";
+import { createPlaceholderAnalysis, daysUntil, initialTasks, type Task, type TaskFeedback } from "../lib/tasks";
 
-type Screen = "add" | "list" | "analyze" | "reflection";
-type NavigationScreen = Exclude<Screen, "reflection">;
-
-const navigation: { id: NavigationScreen; label: string; icon: string }[] = [
-  { id: "add", label: "add", icon: "+" },
-  { id: "list", label: "list", icon: "☰" },
-  { id: "analyze", label: "analyze", icon: "✦" },
-];
-
-const breathingOptions = ["時間にかなり余裕あり", "時間に余裕あり", "若干タイト", "かなりタイト", "ほぼ時間なし"];
+const storageKey = "ai-task-planner.tasks.v1";
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("add");
+  const [screen, setScreen] = useState<PlannerScreen>("add");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [selectedTask, setSelectedTask] = useState<string | null>(null);
-  const [breathing, setBreathing] = useState(breathingOptions[2]);
-  const [feedbackTask, setFeedbackTask] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", deadline: "", summary: "" });
-  const [feedback, setFeedback] = useState({ difficulty: 3, actualHours: "", reflection: "" });
-  const activeTasks = tasks.filter((task) => task.status === "todo");
-  const orderedTasks = useMemo(() => [...activeTasks].sort((a, b) => {
-    const aDays = daysUntil(a.deadline), bDays = daysUntil(b.deadline);
-    const aScore = a.analysis.difficulty * 2 + (aDays <= 3 ? 5 : aDays <= 7 ? 3 : 0);
-    const bScore = b.analysis.difficulty * 2 + (bDays <= 3 ? 5 : bDays <= 7 ? 3 : 0);
-    return bScore - aScore || aDays - bDays;
-  }), [activeTasks]);
+  const [ready, setReady] = useState(false);
+  const [query, setQuery] = useState("");
+  const [slack, setSlack] = useState("かなり余裕あり");
+  const [feedbackTask, setFeedbackTask] = useState<Task | null>(null);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
-  function navigate(next: NavigationScreen) {
-    setScreen(next);
-    setSelectedTask(null);
-    document.getElementById("main-area")?.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  useEffect(() => {
+    let storedTasks: Task[] | null = null;
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      if (saved) storedTasks = JSON.parse(saved) as Task[];
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+    queueMicrotask(() => {
+      if (storedTasks) setTasks(storedTasks);
+      setReady(true);
+    });
+  }, []);
 
-  function addTask(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (ready) {
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(tasks));
+      } catch {
+        // Keep the current session usable when browser storage is unavailable.
+      }
+    }
+  }, [ready, tasks]);
+
+  const activeTasks = useMemo(() => tasks.filter((task) => task.status === "todo"), [tasks]);
+  const filteredTasks = useMemo(() => tasks.filter((task) => task.title.toLowerCase().includes(query.trim().toLowerCase())), [query, tasks]);
+  const sortedTasks = useMemo(() => [...activeTasks].sort((a, b) => {
+    const aDays = daysUntil(a.deadline);
+    const bDays = daysUntil(b.deadline);
+    const aUrgency = urgencyScore(a, aDays, slack);
+    const bUrgency = urgencyScore(b, bDays, slack);
+    return bUrgency - aUrgency || aDays - bDays;
+  }), [activeTasks, slack]);
+
+  function addTask(event: FormEvent<HTMLFormElement>, title: string, deadline: string, summary: string) {
     event.preventDefault();
     const task: Task = {
       id: crypto.randomUUID(),
-      ...form,
+      title: title.trim(),
+      deadline,
+      summary: summary.trim(),
       status: "todo",
-      analysis: createPlaceholderAnalysis(form.summary),
+      analysis: createPlaceholderAnalysis(summary),
     };
     setTasks((current) => [task, ...current]);
-    setForm({ title: "", deadline: "", summary: "" });
-    setScreen("list");
-    document.getElementById("main-area")?.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function beginReflection(taskId: string) {
-    setFeedbackTask(taskId);
-    setFeedback({ difficulty: 3, actualHours: "", reflection: "" });
-    setScreen("reflection");
-    document.getElementById("main-area")?.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function finishTask() {
+  function saveFeedback(feedback: TaskFeedback) {
     if (!feedbackTask) return;
-    setTasks((current) => current.map((task) => task.id === feedbackTask
-      ? { ...task, status: "done", feedback: { difficulty: feedback.difficulty, actualHours: Number(feedback.actualHours) || 0, reflection: feedback.reflection } }
-      : task));
+    setTasks((current) => current.map((task) => task.id === feedbackTask.id ? { ...task, status: "done", feedback } : task));
     setFeedbackTask(null);
-    setSelectedTask(null);
-    setScreen("list");
+  }
+
+  function toggleDone(task: Task) {
+    if (task.status === "done") {
+      setTasks((current) => current.map((item) => item.id === task.id ? { ...item, status: "todo", feedback: undefined } : item));
+    } else {
+      setFeedbackTask(task);
+    }
+  }
+
+  function toggleExpanded(taskId: string) {
+    setExpandedTaskId((current) => current === taskId ? null : taskId);
   }
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <nav aria-label="画面切り替え">
-          {navigation.map((item) => (
-            <button className={`nav-item nav-${item.id} ${screen === item.id ? "active" : ""}`} key={item.id} onClick={() => navigate(item.id)}>
-              <span className={`nav-icon nav-icon-${item.id}`} aria-hidden="true">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
-
-      <section className="main-area" id="main-area">
-        <div className={`page-content page-${screen}`}>
-          {screen === "add" && <>
-            <ViewHeader screen="add" />
-            <form className="task-form" onSubmit={addTask}>
-              <label>タスク名<input required maxLength={80} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-              <label>締め切り<input required type="date" value={form.deadline} onChange={(event) => setForm({ ...form, deadline: event.target.value })} /></label>
-              <label>概要<textarea rows={4} value={form.summary} onChange={(event) => setForm({ ...form, summary: event.target.value })} /></label>
-              <button className="primary-button" type="submit">追加する</button>
-            </form>
-          </>}
-
-          {screen === "list" && <>
-            <ViewHeader screen="list" />
-            <section className="task-list" aria-label="タスク一覧">
-              {tasks.map((task) => (
-                <article className={`task-card ${task.status === "done" ? "is-done" : ""}`} key={task.id}>
-                  <div className="task-row">
-                    <button className="task-open" onClick={() => setSelectedTask(selectedTask === task.id ? null : task.id)} aria-expanded={selectedTask === task.id}>
-                      <span className="task-name">{task.title}</span>
-                      <span className="task-date">{formatDeadline(task.deadline)}</span>
-                      <span className="task-days">{task.status === "done" ? "完了" : daysUntil(task.deadline) < 0 ? "期限超過" : daysUntil(task.deadline) === 0 ? "今日まで" : `あと ${daysUntil(task.deadline)} 日`}</span>
-                    </button>
-                    {task.status === "todo" && <button className="complete-button" onClick={() => beginReflection(task.id)}>完了</button>}
-                  </div>
-                  {selectedTask === task.id && <TaskDetails task={task} />}
-                </article>
-              ))}
-              {tasks.length === 0 && <div className="empty-list" />}
-            </section>
-          </>}
-
-          {screen === "analyze" && <>
-            <ViewHeader screen="analyze" />
-            <div className="schedule-select">
-              <select aria-label="スケジュールの余裕度" value={breathing} onChange={(event) => setBreathing(event.target.value)}>
-                {breathingOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </div>
-            <section className="priority-list" aria-label="優先順位">
-              {orderedTasks.map((task, index) => (
-                <article className="priority-card" key={task.id}>
-                  <span className="rank">{index + 1}</span>
-                  <div className="priority-content">
-                    <button className="priority-task" onClick={() => setSelectedTask(selectedTask === task.id ? null : task.id)} aria-expanded={selectedTask === task.id}>{task.title}</button>
-                    <div className="priority-meta"><span>{formatDeadline(task.deadline)}</span><span>{daysUntil(task.deadline) < 0 ? "期限超過" : daysUntil(task.deadline) === 0 ? "今日まで" : `あと ${daysUntil(task.deadline)} 日`}</span></div>
-                    {selectedTask === task.id && <TaskDetails task={task} />}
-                    <button className="complete-button priority-complete" onClick={() => beginReflection(task.id)}>完了</button>
-                  </div>
-                </article>
-              ))}
-            </section>
-          </>}
-
-          {screen === "reflection" && <>
-            <ViewHeader screen="reflection" />
-            <section className="feedback-panel">
-              <h1>{tasks.find((task) => task.id === feedbackTask)?.title}</h1>
-              <label className="feedback-label">実際の難易度</label>
-              <div className="rating" role="radiogroup" aria-label="実際の難易度">
-                {[1, 2, 3, 4, 5].map((rating) => <button type="button" key={rating} aria-label={`${rating}つ星`} className={rating <= feedback.difficulty ? "rated" : ""} onClick={() => setFeedback({ ...feedback, difficulty: rating })}>★</button>)}
-              </div>
-              <label>実際にかかった時間<input type="number" min="0" step="0.5" value={feedback.actualHours} onChange={(event) => setFeedback({ ...feedback, actualHours: event.target.value })} /><span className="input-unit">時間</span></label>
-              <label>感想・振り返り<textarea rows={4} value={feedback.reflection} onChange={(event) => setFeedback({ ...feedback, reflection: event.target.value })} /></label>
-              <button className="primary-button" onClick={finishTask}>保存する</button>
-            </section>
-          </>}
-        </div>
-      </section>
+      <PlannerSidebar screen={screen} onNavigate={setScreen} />
+      {screen === "add" ? (
+        <TaskEntryPanel
+          tasks={filteredTasks}
+          totalCount={tasks.length}
+          query={query}
+          onQueryChange={setQuery}
+          onSubmit={addTask}
+          onToggleDone={toggleDone}
+          expandedTaskId={expandedTaskId}
+          onToggleExpanded={toggleExpanded}
+        />
+      ) : (
+        <PlanPanel
+          tasks={sortedTasks}
+          slack={slack}
+          onSlackChange={setSlack}
+          onToggleDone={toggleDone}
+          expandedTaskId={expandedTaskId}
+          onToggleExpanded={toggleExpanded}
+        />
+      )}
+      {feedbackTask && <CompletionDialog task={feedbackTask} onCancel={() => setFeedbackTask(null)} onSave={saveFeedback} />}
     </main>
   );
 }
 
-function ViewHeader({ screen }: { screen: Screen }) {
-  const icon = screen === "add" ? "+" : screen === "list" ? "☰" : "✦";
-  return <header className={`view-header header-${screen}`}>
-    <span className={`view-icon icon-${screen}`} aria-hidden="true">{icon}</span>
-    <span>{screen}</span>
-  </header>;
-}
-
-function TaskDetails({ task }: { task: Task }) {
-  return <div className="task-details">
-    <p className="task-summary">{task.summary}</p>
-    <div className="analysis-facts"><span>難易度　{"★".repeat(task.analysis.difficulty)}{"☆".repeat(5 - task.analysis.difficulty)}</span><span>約 {task.analysis.estimatedHours} 時間</span></div>
-    <ul>{task.analysis.subtasks.map((subtask) => <li key={subtask}>{subtask}</li>)}</ul>
-    <p className="analysis-tip">{task.analysis.tip}</p>
-  </div>;
+function urgencyScore(task: Task, days: number, slack: string) {
+  const timePressure = slack === "かなりタイト" ? 4 : slack === "若干タイト" ? 3 : slack === "余裕あり" ? 1 : 0;
+  const deadlineScore = days < 0 ? 16 : days === 0 ? 14 : days <= 3 ? 10 : days <= 7 ? 7 : days <= 14 ? 4 : 1;
+  return deadlineScore + task.analysis.difficulty + timePressure + task.analysis.estimatedHours / 4;
 }
