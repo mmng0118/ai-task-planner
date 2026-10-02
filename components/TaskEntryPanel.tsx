@@ -33,7 +33,7 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
     <section className="workspace entry-workspace">
       <header className="overview-row">
         <div className="welcome-tile" aria-label="タスクプランナー">
-          <span className="welcome-spark">✳</span><span>小さな一歩から、今日の課題を整理しよう</span>
+          <span className="welcome-spark">✳</span><span>タスクの管理はAIにおまかせ</span>
         </div>
         <div className="count-tile">
           <div><span className="count-label">すべてのタスク</span><strong>{String(totalCount).padStart(2, "0")}</strong><span className="count-unit">件</span></div>
@@ -48,7 +48,7 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
           <form className="task-form" onSubmit={submit}>
             <label>タスク名<input required maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例：レポートを提出する" /></label>
             <label>締め切り<input required type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></label>
-            <label>概要<textarea rows={4} value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="課題の内容や、やることをメモ" /></label>
+            <label>概要<textarea rows={4} value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="課題の内容、やることメモ" /></label>
             <button className="coral-button submit-button" type="submit">登録する</button>
           </form>
         </section>

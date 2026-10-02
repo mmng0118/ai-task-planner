@@ -73,10 +73,10 @@ export function PlanPanel({ tasks, slack, onSlackChange, onToggleDone, onToggleS
                     </label>
                   </li>)}</ul>
                 </section>
-                <div className="analysis-advice">
+                <section className="analysis-section">
                   <h3>総評 / アドバイス</h3>
-                  <p>{task.analysis.tip}</p>
-                </div>
+                  <div className="analysis-advice"><p>{task.analysis.tip}</p></div>
+                </section>
               </div>}
             </div>
           </article>;
