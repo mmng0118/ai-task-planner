@@ -24,6 +24,22 @@ export type Task = {
   feedback?: TaskFeedback;
 };
 
+export type AnalyzeRequest = {
+  tasks: Array<{
+    id: string;
+    title: string;
+    summary: string;
+    deadline: string;
+  }>;
+};
+
+export type AnalyzeResponse = {
+  tasks: Array<{
+    id: string;
+    analysis : TaskAnalysis;
+  }>;
+};
+
 // Replace this deterministic placeholder with an analysis API adapter later.
 export function createPlaceholderAnalysis(summary: string): TaskAnalysis {
   const words = summary.trim().split(/\s+/).filter(Boolean).length;
