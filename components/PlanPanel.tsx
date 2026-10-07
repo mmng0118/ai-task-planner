@@ -149,7 +149,7 @@ export function PlanPanel({
                     <section className="analysis-section">
                       <h3>概要</h3>
                       <p className="analysis-summary">
-                        {task.summary || "概要は登録されていません。"}
+                        {task.analysis.summary || task.summary || "概要は登録されていません。"}
                       </p>
                     </section>
                     <section className="analysis-section">

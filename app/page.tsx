@@ -33,7 +33,16 @@ export default function Home() {
     let storedTasks: Task[] | null = null;
     try {
       const saved = window.localStorage.getItem(storageKey);
-      if (saved) storedTasks = JSON.parse(saved) as Task[];
+      if (saved) {
+        const parsedTasks = JSON.parse(saved) as Task[];
+        const starterTaskIds = new Set([
+          "sample-1",
+          "sample-2",
+          "sample-3",
+          "sample-4",
+        ]);
+        storedTasks = parsedTasks.filter((task) => !starterTaskIds.has(task.id));
+      }
     } catch {
       window.localStorage.removeItem(storageKey);
     }
@@ -147,6 +156,14 @@ export default function Home() {
     setExpandedTaskId((current) => (current === taskId ? null : taskId));
   }
 
+  function saveTaskEdit(updatedTask: Task) {
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === updatedTask.id ? updatedTask : task,
+      ),
+    );
+  }
+
   async function analyzeTask() {
     if (activeTasks.length === 0) return;
     const requestData: AnalyzeRequest = {
@@ -221,6 +238,7 @@ export default function Home() {
           onSubmit={addTask}
           onToggleDone={toggleDone}
           onDeleteTask={deleteTask}
+          onSaveEdit={saveTaskEdit}
           expandedTaskId={expandedTaskId}
           onToggleExpanded={toggleExpanded}
         />

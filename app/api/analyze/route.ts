@@ -16,6 +16,7 @@ const responseSchema = {
           analysis: {
             type: "object",
             properties: {
+              summary: { type: "string" },
               difficulty: { type: "integer" },
               estimatedHours: { type: "integer" },
               subtasks: {
@@ -24,7 +25,7 @@ const responseSchema = {
               },
               tip: { type: "string" },
             },
-            required: ["difficulty", "estimatedHours", "subtasks", "tip"],
+            required: ["summary", "difficulty", "estimatedHours", "subtasks", "tip"],
           },
         },
         required: ["id", "analysis"],
@@ -39,10 +40,13 @@ export async function POST(request: Request) {
     const body = (await request.json()) as AnalyzeRequest;
 
     const interaction = await ai.interactions.create({
-      model: "gemini-3.8-flash",
+      model: "gemini-3.5-flash-lite",
       input: `次の学習タスクを分析してください。
+入力された概要を、内容を保ったまま理解しやすく整理した「summary」も作ってください。
+元の概要が長い場合は重要な作業だけを抜粋してまとめ、元の概要が短い場合も「何を」「どのようにするか」が分かる表現に整えてください。
+入力にない情報や具体的な条件は追加しないでください。
 各タスクについて、難易度は1〜5、予想時間は時間単位の整数にしてください。
-現実的なサブタスクをいくつか作り、注意点やアドバイスも書いてください。
+入力された概要を根拠に、現実的なサブタスクをいくつか作り、注意点やアドバイスも書いてください。
 各タスクのidは、入力された値をそのまま使ってください。
 
 タスク:
