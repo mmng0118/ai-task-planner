@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { daysUntil, type Task } from "../lib/tasks";
+
+const welcomeBackgroundImages = [
+  "/images/blue-yellow-vertical-layers-paper.jpg",
+  "/images/top-view-colourful-paper-cut-outs.jpg",
+];
 
 type Props = {
   tasks: Task[];
@@ -22,6 +27,17 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
   const [summary, setSummary] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editSubtasks, setEditSubtasks] = useState("");
+  const [welcomePhotoIndex, setWelcomePhotoIndex] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const intervalId = window.setInterval(() => {
+      setWelcomePhotoIndex((current) => (current + 1) % welcomeBackgroundImages.length);
+    }, 7000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     onSubmit(event, title, deadline, summary);
@@ -60,12 +76,17 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
   return (
     <section className="workspace entry-workspace">
       <header className="overview-row">
-        <div className="welcome-tile" aria-label="タスクプランナー">
-          <span className="welcome-spark">✳</span><span>タスクの管理はAIにおまかせ</span>
+        <div className="welcome-tile" aria-hidden="true">
+          {welcomeBackgroundImages.map((image, index) => (
+            <span
+              key={image}
+              className={`welcome-photo-layer ${index === welcomePhotoIndex ? "is-active" : ""}`}
+              style={{ backgroundImage: `url("${image}")` }}
+            />
+          ))}
         </div>
         <div className="count-tile">
           <div><span className="count-label">すべてのタスク</span><strong>{String(totalCount).padStart(2, "0")}</strong><span className="count-unit">件</span></div>
-          <span className="count-art" aria-hidden="true"><i /><i /><i /></span>
         </div>
       </header>
 
@@ -97,7 +118,13 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
                 <div className="task-actions">
                   <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
                 </div>
-                {expanded && <div className="task-list-detail"><p>{task.summary || "概要は登録されていません。"}</p><span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span><span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span><div className="task-delete-row"><button className="task-delete" type="button" aria-label={`${task.title}を削除する`} onClick={() => onDeleteTask(task)}><span aria-hidden="true">−</span></button></div></div>}
+                {expanded && 
+                  <div className="task-list-detail">
+                  <div className="task-list-analysis">
+                    <strong className="task-list-analysis-title">概要</strong><p>{task.summary || "概要は登録されていません。"}</p></div>
+                    {task.analysis.subtasks.length > 0 && <div className="task-list-subtasks">
+                      <strong className="task-list-subtasks-title">サブタスク</strong>
+                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "○"}</span><span>{subtask}</span></li>; })}</ul></div>}<span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span><span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span><div className="task-delete-row"><button className="task-delete" type="button" aria-label={`${task.title}を削除する`} onClick={() => onDeleteTask(task)}><span aria-hidden="true">−</span></button></div></div>}
                 </article>
                 {expanded && !editingTask && (
                   <div className="task-edit-row">
