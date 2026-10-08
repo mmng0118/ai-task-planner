@@ -20,6 +20,7 @@ type Props = {
   expandedTaskId: string | null;
   onToggleExpanded: (taskId: string) => void;
   onAnalyze: () => void;
+  isAnalyzing: boolean;
 };
 
 export function PlanPanel({
@@ -27,6 +28,7 @@ export function PlanPanel({
   slack,
   onSlackChange,
   onAnalyze,
+  isAnalyzing,
   onToggleDone,
   onToggleSubtask,
   expandedTaskId,
@@ -62,15 +64,20 @@ export function PlanPanel({
             className="coral-button analyze-button"
             type="button"
             onClick={onAnalyze}
+            disabled={isAnalyzing}
           >
-            AIに分析してもらう
+            {isAnalyzing && (
+              <span className="loading-spinner" aria-hidden="true" />
+            )}
+            {isAnalyzing ? "分析中..." : "AIに分析してもらう"}
           </button>
         </div>
       </section>
 
       <div className="plan-heading">
+        <span className="plan-heading-dots" aria-hidden="true"><i /><i /><i /></span>
         <h2>おすすめプラン</h2>
-        <span />
+        <span className="plan-heading-dots" aria-hidden="true"><i /><i /><i /></span>
       </div>
       <section className="priority-timeline" aria-label="優先順位">
         {tasks.map((task, index) => {
@@ -149,7 +156,9 @@ export function PlanPanel({
                     <section className="analysis-section">
                       <h3>概要</h3>
                       <p className="analysis-summary">
-                        {task.analysis.summary || task.summary || "概要は登録されていません。"}
+                        {task.analysis.summary ||
+                          task.summary ||
+                          "概要は登録されていません。"}
                       </p>
                     </section>
                     <section className="analysis-section">

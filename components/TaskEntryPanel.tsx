@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { daysUntil, type Task } from "../lib/tasks";
-
-const welcomeBackgroundImages = [
-  "/images/blue-yellow-vertical-layers-paper.jpg",
-  "/images/top-view-colourful-paper-cut-outs.jpg",
-];
 
 type Props = {
   tasks: Task[];
@@ -27,17 +22,6 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
   const [summary, setSummary] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editSubtasks, setEditSubtasks] = useState("");
-  const [welcomePhotoIndex, setWelcomePhotoIndex] = useState(0);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const intervalId = window.setInterval(() => {
-      setWelcomePhotoIndex((current) => (current + 1) % welcomeBackgroundImages.length);
-    }, 7000);
-
-    return () => window.clearInterval(intervalId);
-  }, []);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     onSubmit(event, title, deadline, summary);
@@ -75,21 +59,6 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
 
   return (
     <section className="workspace entry-workspace">
-      <header className="overview-row">
-        <div className="welcome-tile" aria-hidden="true">
-          {welcomeBackgroundImages.map((image, index) => (
-            <span
-              key={image}
-              className={`welcome-photo-layer ${index === welcomePhotoIndex ? "is-active" : ""}`}
-              style={{ backgroundImage: `url("${image}")` }}
-            />
-          ))}
-        </div>
-        <div className="count-tile">
-          <div><span className="count-label">すべてのタスク</span><strong>{String(totalCount).padStart(2, "0")}</strong><span className="count-unit">件</span></div>
-        </div>
-      </header>
-
       <div className="entry-columns">
         <section className="surface-card entry-card">
           <div className="color-ruler" aria-hidden="true"><i /><i /><i /></div>
@@ -97,14 +66,17 @@ export function TaskEntryPanel({ tasks, totalCount, query, onQueryChange, onSubm
           <form className="task-form" onSubmit={submit}>
             <label>タスク名<input required maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例：レポートを提出する" /></label>
             <label>締め切り<input required type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></label>
-            <label>概要<textarea rows={4} value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="課題の内容、留意すべき点などを詳しく書くと正確な分析ができます" /></label>
+            <label>概要<textarea rows={4} value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="課題の内容を詳しく書くと正確な分析ができます" /></label>
             <button className="coral-button submit-button" type="submit">登録する</button>
           </form>
         </section>
 
         <section className="surface-card task-list-card">
           <div className="color-ruler muted-ruler" aria-hidden="true"><i /><i /><i /></div>
-          <h2 className="section-title">タスク一覧</h2>
+          <div className="task-list-heading">
+            <h2 className="section-title">タスク一覧</h2>
+            <span className="task-count-badge" aria-label={`すべてのタスク ${totalCount}件`}><span>すべてのタスク</span><strong>{String(totalCount).padStart(2, "0")}</strong><span>件</span></span>
+          </div>
           <label className="search-field"><span className="search-icon" aria-hidden="true" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="タスクを検索" aria-label="タスクを検索" /></label>
           <div className="task-list" aria-label="登録済みタスク">
             {tasks.map((task) => {

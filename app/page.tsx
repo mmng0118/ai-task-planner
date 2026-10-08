@@ -28,6 +28,7 @@ export default function Home() {
   const [slack, setSlack] = useState("かなり余裕あり");
   const [feedbackTask, setFeedbackTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     let storedTasks: Task[] | null = null;
@@ -166,64 +167,69 @@ export default function Home() {
 
   async function analyzeTask() {
     if (activeTasks.length === 0) return;
-    const requestData: AnalyzeRequest = {
-      tasks: activeTasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        summary: task.summary,
-        deadline: task.deadline,
-      })),
-    };
-
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestData),
-    });
-    const responseText = await response.text();
-    let responseBody: unknown;
-
+    setIsAnalyzing(true);
     try {
-      responseBody = JSON.parse(responseText);
-    } catch {
-      window.alert("APIから正しいJSON形式の返事がありませんでした。");
-      return;
+      const requestData: AnalyzeRequest = {
+        tasks: activeTasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          summary: task.summary,
+          deadline: task.deadline,
+        })),
+      };
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+      });
+      const responseText = await response.text();
+      let responseBody: unknown;
+
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch {
+        window.alert("APIから正しいJSON形式の返事がありませんでした。");
+        return;
+      }
+
+      if (!response.ok) {
+        const errorMessage =
+          typeof responseBody === "object" &&
+          responseBody !== null &&
+          "error" in responseBody &&
+          typeof responseBody.error === "string"
+            ? responseBody.error
+            : "分析に失敗しました。";
+
+        window.alert(errorMessage);
+        return;
+      }
+
+      if (
+        typeof responseBody !== "object" ||
+        responseBody === null ||
+        !("tasks" in responseBody)
+      ) {
+        window.alert("分析結果の形式が正しくありませんでした。");
+        return;
+      }
+
+      const result = responseBody as AnalyzeResponse;
+      setTasks((currentTasks) =>
+        currentTasks.map((task) => {
+          const resultForTask = result.tasks.find(
+            (resultTask) => resultTask.id === task.id,
+          );
+
+          return resultForTask
+            ? { ...task, analysis: resultForTask.analysis }
+            : task;
+        }),
+      );
+    } finally {
+      setIsAnalyzing(false);
     }
-
-    if (!response.ok) {
-      const errorMessage =
-        typeof responseBody === "object" &&
-        responseBody !== null &&
-        "error" in responseBody &&
-        typeof responseBody.error === "string"
-          ? responseBody.error
-          : "分析に失敗しました。";
-
-      window.alert(errorMessage);
-      return;
-    }
-
-    if (
-      typeof responseBody !== "object" ||
-      responseBody === null ||
-      !("tasks" in responseBody)
-    ) {
-      window.alert("分析結果の形式が正しくありませんでした。");
-      return;
-    }
-
-    const result = responseBody as AnalyzeResponse;
-    setTasks((currentTasks) =>
-      currentTasks.map((task) => {
-        const resultForTask = result.tasks.find(
-          (resultTask) => resultTask.id === task.id,
-        );
-
-        return resultForTask
-          ? { ...task, analysis: resultForTask.analysis }
-          : task;
-      }),
-    );
   }
 
   return (
@@ -248,6 +254,7 @@ export default function Home() {
           slack={slack}
           onSlackChange={setSlack}
           onAnalyze={analyzeTask}
+          isAnalyzing={isAnalyzing}
           onToggleDone={toggleDone}
           onToggleSubtask={toggleSubtask}
           expandedTaskId={expandedTaskId}
@@ -266,14 +273,14 @@ export default function Home() {
 }
 
 function urgencyScore(task: Task, days: number, slack: string) {
-  const timePressure =
+  const workloadWeight =
     slack === "かなりタイト"
-      ? 4
+      ? 1.5
       : slack === "若干タイト"
-        ? 3
+        ? 1.25
         : slack === "余裕あり"
-          ? 1
-          : 0;
+          ? 0.75
+          : 0.5;
   const deadlineScore =
     days < 0
       ? 16
@@ -286,10 +293,8 @@ function urgencyScore(task: Task, days: number, slack: string) {
             : days <= 14
               ? 4
               : 1;
-  return (
-    deadlineScore +
-    task.analysis.difficulty +
-    timePressure +
-    task.analysis.estimatedHours / 4
-  );
+  const workloadScore =
+    task.analysis.difficulty + task.analysis.estimatedHours / 4;
+
+  return deadlineScore + workloadScore * workloadWeight;
 }
