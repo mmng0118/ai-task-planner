@@ -235,8 +235,9 @@ export default function Home() {
   return (
     <main className="app-shell">
       <PlannerSidebar screen={screen} onNavigate={setScreen} />
-      {screen === "add" ? (
+      {screen !== "analyze" ? (
         <TaskEntryPanel
+          view={screen}
           tasks={filteredTasks}
           totalCount={tasks.length}
           query={query}
