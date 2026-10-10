@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CompletionDialog } from "../components/CompletionDialog";
+import { CalendarPanel } from "../components/CalendarPanel";
 import {
   PlannerSidebar,
   type PlannerScreen,
@@ -25,7 +26,6 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
-  const [slack, setSlack] = useState("かなり余裕あり");
   const [feedbackTask, setFeedbackTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -79,11 +79,11 @@ export default function Home() {
       [...activeTasks].sort((a, b) => {
         const aDays = daysUntil(a.deadline);
         const bDays = daysUntil(b.deadline);
-        const aUrgency = urgencyScore(a, aDays, slack);
-        const bUrgency = urgencyScore(b, bDays, slack);
+        const aUrgency = urgencyScore(a, aDays);
+        const bUrgency = urgencyScore(b, bDays);
         return bUrgency - aUrgency || aDays - bDays;
       }),
-    [activeTasks, slack],
+    [activeTasks],
   );
 
   function addTask(
@@ -144,17 +144,20 @@ export default function Home() {
     );
   }
 
-  function deleteTask(task: Task) {
-    const confirmed = window.confirm(
-      `「${task.title}」をタスク一覧から削除しますか？\nこの操作は取り消せません。`,
-    );
-    if (!confirmed) return;
-    setTasks((current) => current.filter((item) => item.id !== task.id));
-    setExpandedTaskId((current) => (current === task.id ? null : current));
+  function deleteTasks(taskIds: string[]) {
+    const ids = new Set(taskIds);
+    setTasks((current) => current.filter((task) => !ids.has(task.id)));
+    setExpandedTaskId((current) => current && ids.has(current) ? null : current);
   }
 
   function toggleExpanded(taskId: string) {
     setExpandedTaskId((current) => (current === taskId ? null : taskId));
+  }
+
+  function openTaskInList(task: Task) {
+    setQuery(task.title);
+    setExpandedTaskId(task.id);
+    setScreen("list");
   }
 
   function saveTaskEdit(updatedTask: Task) {
@@ -235,7 +238,7 @@ export default function Home() {
   return (
     <main className="app-shell">
       <PlannerSidebar screen={screen} onNavigate={setScreen} />
-      {screen !== "analyze" ? (
+      {screen === "add" || screen === "list" ? (
         <TaskEntryPanel
           view={screen}
           tasks={filteredTasks}
@@ -244,16 +247,14 @@ export default function Home() {
           onQueryChange={setQuery}
           onSubmit={addTask}
           onToggleDone={toggleDone}
-          onDeleteTask={deleteTask}
+          onDeleteTasks={deleteTasks}
           onSaveEdit={saveTaskEdit}
           expandedTaskId={expandedTaskId}
           onToggleExpanded={toggleExpanded}
         />
-      ) : (
+      ) : screen === "analyze" ? (
         <PlanPanel
           tasks={sortedTasks}
-          slack={slack}
-          onSlackChange={setSlack}
           onAnalyze={analyzeTask}
           isAnalyzing={isAnalyzing}
           onToggleDone={toggleDone}
@@ -261,6 +262,8 @@ export default function Home() {
           expandedTaskId={expandedTaskId}
           onToggleExpanded={toggleExpanded}
         />
+      ) : (
+        <CalendarPanel tasks={filteredTasks} query={query} onQueryChange={setQuery} onOpenTaskInList={openTaskInList} />
       )}
       {feedbackTask && (
         <CompletionDialog
@@ -273,15 +276,7 @@ export default function Home() {
   );
 }
 
-function urgencyScore(task: Task, days: number, slack: string) {
-  const workloadWeight =
-    slack === "かなりタイト"
-      ? 1.5
-      : slack === "若干タイト"
-        ? 1.25
-        : slack === "余裕あり"
-          ? 0.75
-          : 0.5;
+function urgencyScore(task: Task, days: number) {
   const deadlineScore =
     days < 0
       ? 16
@@ -297,5 +292,5 @@ function urgencyScore(task: Task, days: number, slack: string) {
   const workloadScore =
     task.analysis.difficulty + task.analysis.estimatedHours / 4;
 
-  return deadlineScore + workloadScore * workloadWeight;
+  return deadlineScore + workloadScore;
 }

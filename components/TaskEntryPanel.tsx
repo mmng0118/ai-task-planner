@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { daysUntil, type Task } from "../lib/tasks";
 import { extractDocxText } from "../lib/docx";
 import { extractPdfText } from "../lib/pdf";
@@ -14,13 +14,13 @@ type Props = {
   onQueryChange: (query: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>, title: string, deadline: string, summary: string) => void;
   onToggleDone: (task: Task) => void;
-  onDeleteTask: (task: Task) => void;
+  onDeleteTasks: (taskIds: string[]) => void;
   onSaveEdit: (task: Task) => void;
   expandedTaskId: string | null;
   onToggleExpanded: (taskId: string) => void;
 };
 
-export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onDeleteTask, onSaveEdit, expandedTaskId, onToggleExpanded }: Props) {
+export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onDeleteTasks, onSaveEdit, expandedTaskId, onToggleExpanded }: Props) {
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState("");
   const [summary, setSummary] = useState("");
@@ -30,8 +30,39 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [formErrors, setFormErrors] = useState({ title: false, deadline: false });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isSelectingTasks, setIsSelectingTasks] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [editSubtasks, setEditSubtasks] = useState("");
   const [editErrors, setEditErrors] = useState({ title: false, deadline: false });
+
+  useEffect(() => {
+    setSelectedTaskIds((current) => current.filter((id) => tasks.some((task) => task.id === id)));
+  }, [tasks]);
+
+  function startTaskSelection() {
+    setIsSelectingTasks(true);
+    setSelectedTaskIds([]);
+    if (expandedTaskId) onToggleExpanded(expandedTaskId);
+  }
+
+  function cancelTaskSelection() {
+    setIsSelectingTasks(false);
+    setSelectedTaskIds([]);
+  }
+
+  function toggleTaskSelection(taskId: string) {
+    setSelectedTaskIds((current) => current.includes(taskId)
+      ? current.filter((id) => id !== taskId)
+      : [...current, taskId]);
+  }
+
+  function deleteSelectedTasks() {
+    if (selectedTaskIds.length === 0) return;
+    const confirmed = window.confirm(`選択した${selectedTaskIds.length}件のタスクを削除しますか？\nこの操作は取り消せません。`);
+    if (!confirmed) return;
+    onDeleteTasks(selectedTaskIds);
+    cancelTaskSelection();
+  }
 
   async function handleDocumentChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -157,30 +188,38 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
           <div className="color-ruler muted-ruler" aria-hidden="true"><i /><i /><i /></div>
           <div className="task-list-heading">
             <h2 className="section-title">タスク一覧</h2>
-            <span className="task-count-badge" aria-label={`すべてのタスク ${totalCount}件`}><span>すべてのタスク</span><strong>{String(totalCount).padStart(2, "0")}</strong><span>件</span></span>
+            <span className="task-count-badge" aria-label={`全${totalCount}件`}><span>全</span><strong>{totalCount}</strong><span>件</span></span>
           </div>
           <label className="search-field"><span className="search-icon" aria-hidden="true" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="タスクを検索" aria-label="タスクを検索" /></label>
+          <div className="task-bulk-toolbar">
+            {isSelectingTasks ? <>
+              <span className="task-selection-count">{selectedTaskIds.length}件選択中</span>
+              <button className="task-edit-cancel task-bulk-cancel" type="button" onClick={cancelTaskSelection}>キャンセル</button>
+              <button className="task-bulk-delete" type="button" disabled={selectedTaskIds.length === 0} onClick={deleteSelectedTasks}>選択したタスクを削除</button>
+            </> : tasks.length > 0 && <button className="task-bulk-start" type="button" onClick={startTaskSelection}>タスクを取り消す</button>}
+          </div>
           <div className="task-list" aria-label="登録済みタスク">
             {tasks.map((task) => {
               const expanded = expandedTaskId === task.id;
               const days = daysUntil(task.deadline);
               return <div className="task-list-entry" key={task.id}>
                 <article className={`task-list-item ${task.status === "done" ? "task-done" : ""}`}>
-                <button className="task-list-main" type="button" onClick={() => onToggleExpanded(task.id)} aria-expanded={expanded}>
+                <button className={`task-list-main${isSelectingTasks ? " is-selecting" : ""}${selectedTaskIds.includes(task.id) ? " is-selected" : ""}`} type="button" onClick={() => isSelectingTasks ? toggleTaskSelection(task.id) : onToggleExpanded(task.id)} aria-expanded={isSelectingTasks ? undefined : expanded} aria-pressed={isSelectingTasks ? selectedTaskIds.includes(task.id) : undefined} aria-label={isSelectingTasks ? `${task.title}を${selectedTaskIds.includes(task.id) ? "選択解除" : "選択"}` : undefined}>
+                  {isSelectingTasks && <span className="task-select-indicator" aria-hidden="true">{selectedTaskIds.includes(task.id) ? "✓" : ""}</span>}
                   <span className="list-task-title">{task.title}</span>
                 </button>
-                <div className="task-actions">
+                {!isSelectingTasks && <div className="task-actions">
                   <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
-                </div>
-                {expanded && 
+                </div>}
+                {expanded && !isSelectingTasks &&
                   <div className="task-list-detail">
                   <div className="task-list-analysis">
                     <strong className="task-list-analysis-title">概要</strong><p>{task.summary || "概要は登録されていません。"}</p></div>
                     {task.analysis.subtasks.length > 0 && <div className="task-list-subtasks">
                       <strong className="task-list-subtasks-title">サブタスク</strong>
-                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "○"}</span><span>{subtask}</span></li>; })}</ul></div>}<span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span><span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span><div className="task-delete-row"><button className="task-delete" type="button" aria-label={`${task.title}を削除する`} onClick={() => onDeleteTask(task)}><span aria-hidden="true">−</span></button></div></div>}
+                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "○"}</span><span>{subtask}</span></li>; })}</ul></div>}<span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span><span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span></div>}
                 </article>
-                {expanded && !editingTask && (
+                {expanded && !editingTask && !isSelectingTasks && (
                   <div className="task-edit-row">
                     <button className="task-edit" type="button" onClick={() => beginEdit(task)}>
                       <span aria-hidden="true">✎</span>

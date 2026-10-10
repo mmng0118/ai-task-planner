@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     const interaction = await ai.interactions.create({
       model: "gemini-3.5-flash-lite",
       input: `次の学習タスクを分析してください。
+入力内容が日本語以外の場合には、日本語に翻訳してください。
 入力された概要を、内容を保ったまま理解しやすく整理した「summary」も作ってください。
 元の概要が長い場合は重要な作業だけを抜粋してまとめ、元の概要が短い場合も「何を」「どのようにするか」が分かる表現に整えてください。
 入力にない情報や具体的な条件は追加しないでください。

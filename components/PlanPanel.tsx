@@ -1,20 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { daysUntil, formatShortDate, type Task } from "../lib/tasks";
 
-const slackOptions = [
-  "かなり余裕あり",
-  "余裕あり",
-  "若干タイト",
-  "かなりタイト",
-];
 const rankColors = ["rank-coral", "rank-orange", "rank-green", "rank-blue"];
 
 type Props = {
   tasks: Task[];
-  slack: string;
-  onSlackChange: (slack: string) => void;
   onToggleDone: (task: Task) => void;
   onToggleSubtask: (taskId: string, subtaskIndex: number) => void;
   expandedTaskId: string | null;
@@ -25,8 +16,6 @@ type Props = {
 
 export function PlanPanel({
   tasks,
-  slack,
-  onSlackChange,
   onAnalyze,
   isAnalyzing,
   onToggleDone,
@@ -36,43 +25,19 @@ export function PlanPanel({
 }: Props) {
   return (
     <section className="workspace plan-workspace">
-      <section className="surface-card schedule-panel">
-        <h1>スケジュールの余裕度</h1>
-        <div
-          className="slack-options"
-          role="radiogroup"
-          aria-label="スケジュールの余裕度"
+      <div className="analyze-action">
+        <button
+          className="coral-button analyze-button"
+          type="button"
+          onClick={onAnalyze}
+          disabled={isAnalyzing}
         >
-          {slackOptions.map((option) => (
-            <label
-              className={`slack-option ${slack === option ? "selected" : ""}`}
-              key={option}
-            >
-              <input
-                type="radio"
-                name="slack"
-                checked={slack === option}
-                onChange={() => onSlackChange(option)}
-              />
-              <span className="radio-dot" aria-hidden="true" />
-              {option}
-            </label>
-          ))}
-        </div>
-        <div className="analyze-action">
-          <button
-            className="coral-button analyze-button"
-            type="button"
-            onClick={onAnalyze}
-            disabled={isAnalyzing}
-          >
-            {isAnalyzing && (
-              <span className="loading-spinner" aria-hidden="true" />
-            )}
-            {isAnalyzing ? "分析中..." : "AIに分析してもらう"}
-          </button>
-        </div>
-      </section>
+          {isAnalyzing && (
+            <span className="loading-spinner" aria-hidden="true" />
+          )}
+          {isAnalyzing ? "分析中..." : "AIに分析してもらう"}
+        </button>
+      </div>
 
       <div className="plan-heading">
         <span className="plan-heading-dots" aria-hidden="true"><i /><i /><i /></span>

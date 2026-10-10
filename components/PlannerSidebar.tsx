@@ -1,6 +1,6 @@
 "use client";
 
-export type PlannerScreen = "add" | "list" | "analyze";
+export type PlannerScreen = "add" | "list" | "analyze" | "calendar";
 
 export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; onNavigate: (screen: PlannerScreen) => void }) {
   return (
@@ -18,6 +18,9 @@ export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; 
         </button>
         <button type="button" className={`nav-item ${screen === "analyze" ? "active" : ""}`} onClick={() => onNavigate("analyze")}>
           <span className="nav-glyph glyph-bars" aria-hidden="true"><i /><i /><i /></span><span>分析結果</span>
+        </button>
+        <button type="button" className={`nav-item ${screen === "calendar" ? "active" : ""}`} onClick={() => onNavigate("calendar")}>
+          <span className="nav-glyph glyph-calendar" aria-hidden="true" /><span>カレンダー</span>
         </button>
       </nav>
     </aside>
