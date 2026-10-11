@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { daysUntil, type Task } from "../lib/tasks";
+import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties, type FormEvent } from "react";
+import { daysUntil, estimatedMinutes, formatEstimatedHours, type Task } from "../lib/tasks";
 import { extractDocxText } from "../lib/docx";
 import { extractPdfText } from "../lib/pdf";
 import { DatePicker } from "./DatePicker";
@@ -18,9 +18,12 @@ type Props = {
   onSaveEdit: (task: Task) => void;
   expandedTaskId: string | null;
   onToggleExpanded: (taskId: string) => void;
+  analyzingTaskIds: string[];
+  onRetryAnalyze: (task: Task) => void;
+  isAnalyzing: boolean;
 };
 
-export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onDeleteTasks, onSaveEdit, expandedTaskId, onToggleExpanded }: Props) {
+export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onDeleteTasks, onSaveEdit, expandedTaskId, onToggleExpanded, analyzingTaskIds, onRetryAnalyze, isAnalyzing }: Props) {
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState("");
   const [summary, setSummary] = useState("");
@@ -34,10 +37,80 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [editSubtasks, setEditSubtasks] = useState("");
   const [editErrors, setEditErrors] = useState({ title: false, deadline: false });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [difficultyFilter, setDifficultyFilter] = useState("");
+  const [deadlineFrom, setDeadlineFrom] = useState("");
+  const [deadlineTo, setDeadlineTo] = useState("");
+  const [minutesMin, setMinutesMin] = useState(0);
+  const [minutesMax, setMinutesMax] = useState<number | null>(null);
+  const [draftDifficulty, setDraftDifficulty] = useState("");
+  const [draftDeadlineFrom, setDraftDeadlineFrom] = useState("");
+  const [draftDeadlineTo, setDraftDeadlineTo] = useState("");
+  const [draftMinutesMin, setDraftMinutesMin] = useState(0);
+  const [draftMinutesMax, setDraftMinutesMax] = useState(480);
 
   useEffect(() => {
     setSelectedTaskIds((current) => current.filter((id) => tasks.some((task) => task.id === id)));
   }, [tasks]);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setFiltersOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [filtersOpen]);
+
+  const longestTaskMinutes = Math.max(0, ...tasks.map((task) => estimatedMinutes(task.analysis.estimatedHours)));
+  const sliderMaxMinutes = Math.max(480, Math.ceil((longestTaskMinutes + 30) / 30) * 30);
+  const visibleTasks = useMemo(() => tasks.filter((task) => {
+    if (difficultyFilter && task.analysis.difficulty !== Number(difficultyFilter)) return false;
+    if (deadlineFrom && task.deadline < deadlineFrom) return false;
+    if (deadlineTo && task.deadline > deadlineTo) return false;
+    const taskMinutes = estimatedMinutes(task.analysis.estimatedHours);
+    if (taskMinutes < minutesMin) return false;
+    if (minutesMax !== null && taskMinutes > minutesMax) return false;
+    return true;
+  }), [deadlineFrom, deadlineTo, difficultyFilter, minutesMin, minutesMax, tasks]);
+  const hasFilters = Boolean(difficultyFilter || deadlineFrom || deadlineTo || minutesMin > 0 || minutesMax !== null);
+
+  function openFilters() {
+    setDraftDifficulty(difficultyFilter);
+    setDraftDeadlineFrom(deadlineFrom);
+    setDraftDeadlineTo(deadlineTo);
+    setDraftMinutesMin(minutesMin);
+    setDraftMinutesMax(minutesMax ?? sliderMaxMinutes);
+    setFiltersOpen(true);
+  }
+
+  function applyFilters() {
+    setDifficultyFilter(draftDifficulty);
+    if (draftDeadlineFrom && draftDeadlineTo && draftDeadlineFrom > draftDeadlineTo) {
+      setDeadlineFrom(draftDeadlineTo);
+      setDeadlineTo(draftDeadlineFrom);
+    } else {
+      setDeadlineFrom(draftDeadlineFrom);
+      setDeadlineTo(draftDeadlineTo);
+    }
+    setMinutesMin(draftMinutesMin);
+    setMinutesMax(draftMinutesMax >= sliderMaxMinutes ? null : draftMinutesMax);
+    setFiltersOpen(false);
+  }
+
+  function clearFilters() {
+    setDifficultyFilter("");
+    setDeadlineFrom("");
+    setDeadlineTo("");
+    setMinutesMin(0);
+    setMinutesMax(null);
+    setDraftDifficulty("");
+    setDraftDeadlineFrom("");
+    setDraftDeadlineTo("");
+    setDraftMinutesMin(0);
+    setDraftMinutesMax(sliderMaxMinutes);
+    setFiltersOpen(false);
+  }
 
   function startTaskSelection() {
     setIsSelectingTasks(true);
@@ -178,28 +251,34 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               </div>}
               {attachmentError && <span className="document-attach-error" role="alert">{attachmentError}</span>}
             </div>
-            <button className="coral-button submit-button" type="submit" disabled={isReadingFile}>{isReadingFile ? "読み取り中…" : "登録する"}</button>
+            {isAnalyzing && <p className="task-submit-status" role="status">AIがタスクを分析しています。完了するとプランに反映されます。</p>}
+            <button className="coral-button submit-button" type="submit" disabled={isReadingFile || isAnalyzing}>{isReadingFile ? "読み取り中…" : isAnalyzing ? "AI分析中…" : "登録する"}</button>
           </form>
         </section>
         )}
 
         {view === "list" && (
         <section className="surface-card task-list-card">
-          <div className="color-ruler muted-ruler" aria-hidden="true"><i /><i /><i /></div>
-          <div className="task-list-heading">
-            <h2 className="section-title">タスク一覧</h2>
-            <span className="task-count-badge" aria-label={`全${totalCount}件`}><span>全</span><strong>{totalCount}</strong><span>件</span></span>
-          </div>
-          <label className="search-field"><span className="search-icon" aria-hidden="true" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="タスクを検索" aria-label="タスクを検索" /></label>
+            <div className="color-ruler muted-ruler" aria-hidden="true"><i /><i /><i /></div>
+            <div className="task-list-heading">
+              <h2 className="section-title">タスク一覧</h2>
+              <span className="task-count-badge" aria-label={`全${totalCount}件`}><span>全</span><strong>{totalCount}</strong><span>件</span></span>
+            </div>
+            <div className="calendar-search-wrap task-list-search-wrap">
+              <label className="search-field calendar-search"><span className="search-icon" aria-hidden="true" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="タスクを検索" aria-label="タスクを検索" /></label>
+              <button className={`calendar-filter-toggle${hasFilters ? " has-filters" : ""}`} type="button" aria-label={`フィルター${hasFilters ? `適用中 ${[difficultyFilter, deadlineFrom || deadlineTo, minutesMin > 0 || minutesMax !== null].filter(Boolean).length}件` : ""}`} aria-expanded={filtersOpen} aria-haspopup="dialog" onClick={openFilters}>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.7 7.5v5.8l-3.6 1.8v-7.6L3.5 5Z" /></svg>
+              </button>
+            </div>
           <div className="task-bulk-toolbar">
             {isSelectingTasks ? <>
               <span className="task-selection-count">{selectedTaskIds.length}件選択中</span>
               <button className="task-edit-cancel task-bulk-cancel" type="button" onClick={cancelTaskSelection}>キャンセル</button>
               <button className="task-bulk-delete" type="button" disabled={selectedTaskIds.length === 0} onClick={deleteSelectedTasks}>選択したタスクを削除</button>
-            </> : tasks.length > 0 && <button className="task-bulk-start" type="button" onClick={startTaskSelection}>タスクを取り消す</button>}
+            </> : visibleTasks.length > 0 && <button className="task-bulk-start" type="button" onClick={startTaskSelection}>タスクを取り消す</button>}
           </div>
-          <div className="task-list" aria-label="登録済みタスク">
-            {tasks.map((task) => {
+          <div className="task-list" id="task-list-panel" aria-label="登録済みタスク">
+            {visibleTasks.map((task) => {
               const expanded = expandedTaskId === task.id;
               const days = daysUntil(task.deadline);
               return <div className="task-list-entry" key={task.id}>
@@ -207,18 +286,31 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                 <button className={`task-list-main${isSelectingTasks ? " is-selecting" : ""}${selectedTaskIds.includes(task.id) ? " is-selected" : ""}`} type="button" onClick={() => isSelectingTasks ? toggleTaskSelection(task.id) : onToggleExpanded(task.id)} aria-expanded={isSelectingTasks ? undefined : expanded} aria-pressed={isSelectingTasks ? selectedTaskIds.includes(task.id) : undefined} aria-label={isSelectingTasks ? `${task.title}を${selectedTaskIds.includes(task.id) ? "選択解除" : "選択"}` : undefined}>
                   {isSelectingTasks && <span className="task-select-indicator" aria-hidden="true">{selectedTaskIds.includes(task.id) ? "✓" : ""}</span>}
                   <span className="list-task-title">{task.title}</span>
+                  {task.analysisStatus === "pending" && <span className={`task-analysis-chip${task.analysisError ? " has-error" : ""}`}>
+                    {analyzingTaskIds.includes(task.id) ? "AI分析中…" : task.analysisError ? "分析に失敗" : "分析待ち"}
+                  </span>}
                 </button>
                 {!isSelectingTasks && <div className="task-actions">
                   <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
                 </div>}
                 {expanded && !isSelectingTasks &&
                   <div className="task-list-detail">
+                  {task.analysisStatus === "pending" && <div className={`task-analysis-inline${task.analysisError ? " has-error" : ""}`} role={task.analysisError ? "alert" : "status"}>
+                    <span>{analyzingTaskIds.includes(task.id) ? "AIがタスクを分析しています…" : task.analysisError || "このタスクはまだ分析されていません。"}</span>
+                    {!analyzingTaskIds.includes(task.id) && <button type="button" onClick={() => onRetryAnalyze(task)} disabled={isAnalyzing}>{task.analysisError ? "AI分析を再試行" : "AI分析する"}</button>}
+                  </div>}
+                  {task.analysisStatus !== "pending" && <div className="task-list-meta">
+                    <span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span>
+                    <span>目安 {formatEstimatedHours(task.analysis.estimatedHours)}</span>
+                    <span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span>
+                  </div>}
                   <div className="task-list-analysis">
-                    <strong className="task-list-analysis-title">概要</strong><p>{task.summary || "概要は登録されていません。"}</p></div>
+                    <strong className="task-list-analysis-title">概要</strong><p>{task.analysisStatus === "complete" ? task.analysis.summary : task.summary || "概要は登録されていません。"}</p></div>
+                    {task.analysisStatus !== "pending" && <>
                     {task.analysis.subtasks.length > 0 && <div className="task-list-subtasks">
                       <strong className="task-list-subtasks-title">サブタスク</strong>
-                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "○"}</span><span>{subtask}</span></li>; })}</ul></div>}<span className="days-badge">{task.status === "done" ? "完了" : days < 0 ? "期限超過" : days === 0 ? "今日が締め切り" : `あと${days}日`}</span><span>目安 {task.analysis.estimatedHours}h</span><span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>{"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i></span></div>}
-                </article>
+                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "○"}</span><span>{subtask}</span></li>; })}</ul></div>}
+                    </>}</div>}
                 {expanded && !editingTask && !isSelectingTasks && (
                   <div className="task-edit-row">
                     <button className="task-edit" type="button" onClick={() => beginEdit(task)}>
@@ -227,25 +319,87 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                     </button>
                   </div>
                 )}
+                </article>
               </div>;
               
             })}
-            {tasks.length === 0 && <p className="empty-state">該当するタスクはありません<br/>
-            <span className="empty-state-span">タスク</span>を登録してください</p>}
+            {visibleTasks.length === 0 && (totalCount === 0
+              ? <p className="empty-state">該当するタスクはありません<br/><span className="empty-state-span">タスク</span>を登録してください</p>
+              : <p className="empty-state">条件に一致するタスクはありません</p>)}
           </div>
         </section>
         )}
       </div>
+      {filtersOpen && view === "list" && (
+        <div className="dialog-backdrop calendar-filter-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setFiltersOpen(false); }}>
+          <section className="task-edit-dialog calendar-filter-dialog" role="dialog" aria-modal="true" aria-labelledby="task-list-filter-title">
+            <button className="dialog-close" type="button" aria-label="フィルターを閉じる" onClick={() => setFiltersOpen(false)}>×</button>
+            <h2 id="task-list-filter-title">フィルター</h2>
+            <p className="task-edit-dialog-caption">表示するタスクの条件を選んでください</p>
+            <div className="calendar-filter-fields">
+              <label>難易度
+                <select value={draftDifficulty} onChange={(event) => setDraftDifficulty(event.target.value)}>
+                  <option value="">すべて</option>
+                  {[1, 2, 3, 4, 5].map((level) => <option value={level} key={level}>★ {level}</option>)}
+                </select>
+              </label>
+              <div className="calendar-filter-date-field">
+                <span className="calendar-filter-field-label">締め切り期間</span>
+                <div className="calendar-filter-date-range">
+                  <label>最短日<DatePicker value={draftDeadlineFrom} onChange={setDraftDeadlineFrom} ariaLabel="締め切りの最短日" /></label>
+                  <span className="calendar-filter-date-separator" aria-hidden="true">〜</span>
+                  <label>最長日<DatePicker value={draftDeadlineTo} onChange={setDraftDeadlineTo} ariaLabel="締め切りの最長日" /></label>
+                </div>
+              </div>
+              <div className="calendar-filter-time-field">
+                <span className="calendar-filter-field-label">予想時間</span>
+                <div className="calendar-filter-time-range">
+                  <div className="calendar-filter-range-values" aria-live="polite">
+                    <strong>{draftMinutesMin === 0 ? "指定なし" : formatEstimatedHours(draftMinutesMin / 60)}</strong>
+                    <span>〜</span>
+                    <strong>{draftMinutesMax >= sliderMaxMinutes ? "指定なし" : formatEstimatedHours(draftMinutesMax / 60)}</strong>
+                  </div>
+                  <div className="calendar-dual-range" style={{
+                    "--range-start": `${(draftMinutesMin / sliderMaxMinutes) * 100}%`,
+                    "--range-end": `${(draftMinutesMax / sliderMaxMinutes) * 100}%`,
+                  } as CSSProperties}>
+                    <span className="calendar-dual-track" aria-hidden="true" />
+                    <span className="calendar-dual-selection" aria-hidden="true" />
+                    <input className="calendar-dual-input calendar-dual-input-min" type="range" min="0" max={sliderMaxMinutes} step="10" value={draftMinutesMin} aria-label="予想時間の下限" onChange={(event) => {
+                      const nextValue = Number(event.target.value);
+                      setDraftMinutesMin(nextValue);
+                      if (nextValue > draftMinutesMax) setDraftMinutesMax(nextValue);
+                    }} />
+                    <input className="calendar-dual-input calendar-dual-input-max" type="range" min="0" max={sliderMaxMinutes} step="10" value={draftMinutesMax} aria-label="予想時間の上限" onChange={(event) => {
+                      const nextValue = Number(event.target.value);
+                      setDraftMinutesMax(nextValue);
+                      if (nextValue < draftMinutesMin) setDraftMinutesMin(nextValue);
+                    }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="calendar-filter-actions">
+              <button className="calendar-filter-reset" type="button" onClick={clearFilters}>条件をクリア</button>
+              <div className="calendar-filter-buttons">
+                <button className="coral-button" type="button" onClick={applyFilters}>この条件で表示</button>
+                <button className="task-edit-cancel" type="button" onClick={() => setFiltersOpen(false)}>キャンセル</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
       {editingTask && (
         <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingTask(null); }}>
           <section className="task-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="task-edit-title">
             <button className="dialog-close" type="button" onClick={() => setEditingTask(null)} aria-label="閉じる">×</button>
             <h2 id="task-edit-title">タスクを編集</h2>
-            <p className="task-edit-dialog-caption">登録内容とAIの分析結果を編集できます</p>
+            <p className="task-edit-dialog-caption">{editingTask.analysisStatus === "pending" ? "登録内容を編集できます。AI分析後に分析結果を確認できます。" : "登録内容とAIの分析結果を編集できます"}</p>
             <form className="task-edit-form" noValidate onSubmit={saveEdit}>
               <label>タスク名<input required aria-invalid={editErrors.title} maxLength={100} value={editingTask.title} onChange={(event) => { setEditingTask({ ...editingTask, title: event.target.value }); if (event.target.value.trim()) setEditErrors((errors) => ({ ...errors, title: false })); }} />{editErrors.title && <span className="field-error">タスク名を入力してください</span>}</label>
               <div className="task-edit-date-field"><span className="task-edit-date-label">締め切り</span><DatePicker value={editingTask.deadline} onChange={(value) => { setEditingTask({ ...editingTask, deadline: value }); if (value) setEditErrors((errors) => ({ ...errors, deadline: false })); }} error={editErrors.deadline} /></div>
               <label>入力した概要<textarea rows={3} value={editingTask.summary} onChange={(event) => setEditingTask({ ...editingTask, summary: event.target.value })} /></label>
+              {editingTask.analysisStatus !== "pending" && <>
               <div className="task-edit-numbers">
                 <fieldset className="difficulty-field task-edit-difficulty">
                   <legend>予想難易度</legend>
@@ -265,9 +419,10 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                     ))}
                   </div>
                 </fieldset>
-                <label>予想時間（h）<input required type="number" min={1} value={editingTask.analysis.estimatedHours} onChange={(event) => setEditingTask({ ...editingTask, analysis: { ...editingTask.analysis, estimatedHours: Number(event.target.value) } })} /></label>
+                <label>予想時間（h）<input required type="number" min={0.17} step="any" value={editingTask.analysis.estimatedHours} onChange={(event) => setEditingTask({ ...editingTask, analysis: { ...editingTask.analysis, estimatedHours: Number(event.target.value) } })} /></label>
               </div>
               <label>サブタスク（1行につき1タスクまで）<textarea rows={4} value={editSubtasks} onChange={(event) => setEditSubtasks(event.target.value)} /></label>
+              </>}
               <div className="task-edit-buttons">
                 <button className="coral-button" type="submit">保存する</button>
                 <button className="task-edit-cancel" type="button" onClick={() => setEditingTask(null)}>キャンセル</button>

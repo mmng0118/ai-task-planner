@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { daysUntil, type Task } from "../lib/tasks";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { estimatedMinutes, formatEstimatedHours, type Task } from "../lib/tasks";
+import { DatePicker } from "./DatePicker";
 
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -10,32 +11,35 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
   const [searchSuggestionsOpen, setSearchSuggestionsOpen] = useState(false);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState("");
-  const [deadlineFilter, setDeadlineFilter] = useState("");
-  const [hoursFilter, setHoursFilter] = useState("");
+  const [deadlineFrom, setDeadlineFrom] = useState("");
+  const [deadlineTo, setDeadlineTo] = useState("");
+  const [minutesMin, setMinutesMin] = useState(0);
+  const [minutesMax, setMinutesMax] = useState<number | null>(null);
   const [draftDifficulty, setDraftDifficulty] = useState("");
-  const [draftDeadline, setDraftDeadline] = useState("");
-  const [draftHours, setDraftHours] = useState("");
+  const [draftDeadlineFrom, setDraftDeadlineFrom] = useState("");
+  const [draftDeadlineTo, setDraftDeadlineTo] = useState("");
+  const [draftMinutesMin, setDraftMinutesMin] = useState(0);
+  const [draftMinutesMax, setDraftMinutesMax] = useState(480);
   const [shownMonth, setShownMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  const longestTaskMinutes = Math.max(0, ...tasks.map((task) => estimatedMinutes(task.analysis.estimatedHours)));
+  const sliderMaxMinutes = Math.max(480, Math.ceil((longestTaskMinutes + 30) / 30) * 30);
 
   const visibleTasks = useMemo(() => tasks.filter((task) => {
     if (difficultyFilter && task.analysis.difficulty !== Number(difficultyFilter)) return false;
 
-    const days = daysUntil(task.deadline);
-    if (deadlineFilter === "overdue" && days >= 0) return false;
-    if (deadlineFilter === "today" && days !== 0) return false;
-    if (deadlineFilter === "week" && (days < 0 || days > 7)) return false;
-    if (deadlineFilter === "later" && days <= 7) return false;
+    if (deadlineFrom && task.deadline < deadlineFrom) return false;
+    if (deadlineTo && task.deadline > deadlineTo) return false;
 
-    if (hoursFilter === "short" && task.analysis.estimatedHours > 3) return false;
-    if (hoursFilter === "medium" && (task.analysis.estimatedHours < 4 || task.analysis.estimatedHours > 6)) return false;
-    if (hoursFilter === "long" && task.analysis.estimatedHours < 7) return false;
+    const taskMinutes = estimatedMinutes(task.analysis.estimatedHours);
+    if (taskMinutes < minutesMin) return false;
+    if (minutesMax !== null && taskMinutes > minutesMax) return false;
     return true;
-  }), [deadlineFilter, difficultyFilter, hoursFilter, tasks]);
+  }), [deadlineFrom, deadlineTo, difficultyFilter, minutesMin, minutesMax, tasks]);
 
-  const hasFilters = Boolean(difficultyFilter || deadlineFilter || hoursFilter);
+  const hasFilters = Boolean(difficultyFilter || deadlineFrom || deadlineTo || minutesMin > 0 || minutesMax !== null);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const searchSuggestions = normalizedQuery ? visibleTasks.slice(0, 8) : [];
 
@@ -90,25 +94,38 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
 
   function openFilters() {
     setDraftDifficulty(difficultyFilter);
-    setDraftDeadline(deadlineFilter);
-    setDraftHours(hoursFilter);
+    setDraftDeadlineFrom(deadlineFrom);
+    setDraftDeadlineTo(deadlineTo);
+    setDraftMinutesMin(minutesMin);
+    setDraftMinutesMax(minutesMax ?? sliderMaxMinutes);
     setFiltersOpen(true);
   }
 
   function applyFilters() {
     setDifficultyFilter(draftDifficulty);
-    setDeadlineFilter(draftDeadline);
-    setHoursFilter(draftHours);
+    if (draftDeadlineFrom && draftDeadlineTo && draftDeadlineFrom > draftDeadlineTo) {
+      setDeadlineFrom(draftDeadlineTo);
+      setDeadlineTo(draftDeadlineFrom);
+    } else {
+      setDeadlineFrom(draftDeadlineFrom);
+      setDeadlineTo(draftDeadlineTo);
+    }
+    setMinutesMin(draftMinutesMin);
+    setMinutesMax(draftMinutesMax >= sliderMaxMinutes ? null : draftMinutesMax);
     setFiltersOpen(false);
   }
 
   function clearFilters() {
     setDifficultyFilter("");
-    setDeadlineFilter("");
-    setHoursFilter("");
+    setDeadlineFrom("");
+    setDeadlineTo("");
+    setMinutesMin(0);
+    setMinutesMax(null);
     setDraftDifficulty("");
-    setDraftDeadline("");
-    setDraftHours("");
+    setDraftDeadlineFrom("");
+    setDraftDeadlineTo("");
+    setDraftMinutesMin(0);
+    setDraftMinutesMax(sliderMaxMinutes);
     setFiltersOpen(false);
   }
 
@@ -137,7 +154,7 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
             <span className="search-icon" aria-hidden="true" />
             <input value={query} onFocus={() => setSearchSuggestionsOpen(true)} onChange={(event) => { onQueryChange(event.target.value); setSearchSuggestionsOpen(true); }} placeholder="タスクを検索" aria-label="カレンダーのタスクを検索" aria-autocomplete="list" aria-expanded={searchSuggestionsOpen && searchSuggestions.length > 0} />
           </label>
-          <button className={`calendar-filter-toggle${hasFilters ? " has-filters" : ""}`} type="button" aria-label={`フィルター${hasFilters ? `適用中 ${[difficultyFilter, deadlineFilter, hoursFilter].filter(Boolean).length}件` : ""}`} aria-expanded={filtersOpen} aria-haspopup="dialog" onClick={openFilters}>
+          <button className={`calendar-filter-toggle${hasFilters ? " has-filters" : ""}`} type="button" aria-label={`フィルター${hasFilters ? `適用中 ${[difficultyFilter, deadlineFrom || deadlineTo, minutesMin > 0 || minutesMax !== null].filter(Boolean).length}件` : ""}`} aria-expanded={filtersOpen} aria-haspopup="dialog" onClick={openFilters}>
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.7 7.5v5.8l-3.6 1.8v-7.6L3.5 5Z" /></svg>
           </button>
           {searchSuggestionsOpen && searchSuggestions.length > 0 && <div className="calendar-search-suggestions" role="listbox" aria-label="検索候補">
@@ -161,23 +178,41 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
               {[1, 2, 3, 4, 5].map((level) => <option value={level} key={level}>★ {level}</option>)}
             </select>
           </label>
-          <label>締め切り
-            <select value={draftDeadline} onChange={(event) => setDraftDeadline(event.target.value)}>
-              <option value="">すべて</option>
-              <option value="overdue">期限超過</option>
-              <option value="today">今日</option>
-              <option value="week">7日以内</option>
-              <option value="later">8日以上先</option>
-            </select>
-          </label>
-          <label>予想時間
-            <select value={draftHours} onChange={(event) => setDraftHours(event.target.value)}>
-              <option value="">すべて</option>
-              <option value="short">3時間以下</option>
-              <option value="medium">4〜6時間</option>
-              <option value="long">7時間以上</option>
-            </select>
-          </label>
+          <div className="calendar-filter-date-field">
+            <span className="calendar-filter-field-label">締め切り期間</span>
+            <div className="calendar-filter-date-range">
+              <label>最短日<DatePicker value={draftDeadlineFrom} onChange={setDraftDeadlineFrom} ariaLabel="締め切りの最短日" /></label>
+              <span className="calendar-filter-date-separator" aria-hidden="true">〜</span>
+              <label>最長日<DatePicker value={draftDeadlineTo} onChange={setDraftDeadlineTo} ariaLabel="締め切りの最長日" /></label>
+            </div>
+          </div>
+          <div className="calendar-filter-time-field">
+            <span className="calendar-filter-field-label">予想時間</span>
+            <div className="calendar-filter-time-range">
+              <div className="calendar-filter-range-values" aria-live="polite">
+                <strong>{draftMinutesMin === 0 ? "指定なし" : formatEstimatedHours(draftMinutesMin / 60)}</strong>
+                <span>〜</span>
+                <strong>{draftMinutesMax >= sliderMaxMinutes ? "指定なし" : formatEstimatedHours(draftMinutesMax / 60)}</strong>
+              </div>
+              <div className="calendar-dual-range" style={{
+                "--range-start": `${(draftMinutesMin / sliderMaxMinutes) * 100}%`,
+                "--range-end": `${(draftMinutesMax / sliderMaxMinutes) * 100}%`,
+              } as CSSProperties}>
+                <span className="calendar-dual-track" aria-hidden="true" />
+                <span className="calendar-dual-selection" aria-hidden="true" />
+                <input className="calendar-dual-input calendar-dual-input-min" type="range" min="0" max={sliderMaxMinutes} step="10" value={draftMinutesMin} aria-label="予想時間の下限" onChange={(event) => {
+                  const nextValue = Number(event.target.value);
+                  setDraftMinutesMin(nextValue);
+                  if (nextValue > draftMinutesMax) setDraftMinutesMax(nextValue);
+                }} />
+                <input className="calendar-dual-input calendar-dual-input-max" type="range" min="0" max={sliderMaxMinutes} step="10" value={draftMinutesMax} aria-label="予想時間の上限" onChange={(event) => {
+                  const nextValue = Number(event.target.value);
+                  setDraftMinutesMax(nextValue);
+                  if (nextValue < draftMinutesMin) setDraftMinutesMin(nextValue);
+                }} />
+              </div>
+            </div>
+          </div>
             </div>
             <div className="calendar-filter-actions">
               <button className="calendar-filter-reset" type="button" onClick={clearFilters}>条件をクリア</button>

@@ -28,7 +28,8 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [feedbackTask, setFeedbackTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzingTaskIds, setAnalyzingTaskIds] = useState<string[]>([]);
+  const isAnalyzing = analyzingTaskIds.length > 0;
 
   useEffect(() => {
     let storedTasks: Task[] | null = null;
@@ -100,8 +101,10 @@ export default function Home() {
       summary: summary.trim(),
       status: "todo",
       analysis: createPlaceholderAnalysis(summary),
+      analysisStatus: "pending",
     };
     setTasks((current) => [task, ...current]);
+    void analyzeTasks([task]);
   }
 
   function saveFeedback(feedback: TaskFeedback) {
@@ -161,19 +164,32 @@ export default function Home() {
   }
 
   function saveTaskEdit(updatedTask: Task) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === updatedTask.id ? updatedTask : task,
-      ),
-    );
+    const currentTask = tasks.find((task) => task.id === updatedTask.id);
+    const needsReanalysis = Boolean(currentTask && currentTask.status === "todo" && (
+      currentTask.title !== updatedTask.title ||
+      currentTask.summary !== updatedTask.summary ||
+      currentTask.deadline !== updatedTask.deadline
+    ));
+    const taskToSave = needsReanalysis
+      ? { ...updatedTask, analysisStatus: "pending" as const, analysisError: undefined }
+      : updatedTask;
+    setTasks((currentTasks) => currentTasks.map((task) =>
+      task.id === updatedTask.id ? taskToSave : task,
+    ));
+    if (needsReanalysis) void analyzeTasks([taskToSave]);
   }
 
-  async function analyzeTask() {
-    if (activeTasks.length === 0) return;
-    setIsAnalyzing(true);
+  async function analyzeTasks(tasksToAnalyze: Task[]) {
+    if (tasksToAnalyze.length === 0) return;
+    const taskIds = tasksToAnalyze.map((task) => task.id);
+    setAnalyzingTaskIds((current) => [...new Set([...current, ...taskIds])]);
+    setTasks((current) => current.map((task) => taskIds.includes(task.id)
+      ? { ...task, analysisError: undefined }
+      : task,
+    ));
     try {
       const requestData: AnalyzeRequest = {
-        tasks: activeTasks.map((task) => ({
+        tasks: tasksToAnalyze.map((task) => ({
           id: task.id,
           title: task.title,
           summary: task.summary,
@@ -192,8 +208,7 @@ export default function Home() {
       try {
         responseBody = JSON.parse(responseText);
       } catch {
-        window.alert("APIから正しいJSON形式の返事がありませんでした。");
-        return;
+        throw new Error("APIから正しいJSON形式の返事がありませんでした。");
       }
 
       if (!response.ok) {
@@ -205,8 +220,7 @@ export default function Home() {
             ? responseBody.error
             : "分析に失敗しました。";
 
-        window.alert(errorMessage);
-        return;
+        throw new Error(errorMessage);
       }
 
       if (
@@ -214,11 +228,14 @@ export default function Home() {
         responseBody === null ||
         !("tasks" in responseBody)
       ) {
-        window.alert("分析結果の形式が正しくありませんでした。");
-        return;
+        throw new Error("分析結果の形式が正しくありませんでした。");
       }
 
       const result = responseBody as AnalyzeResponse;
+      const resultIds = new Set(result.tasks.map((resultTask) => resultTask.id));
+      if (taskIds.some((id) => !resultIds.has(id))) {
+        throw new Error("一部のタスクの分析結果がありませんでした。もう一度お試しください。");
+      }
       setTasks((currentTasks) =>
         currentTasks.map((task) => {
           const resultForTask = result.tasks.find(
@@ -226,12 +243,18 @@ export default function Home() {
           );
 
           return resultForTask
-            ? { ...task, analysis: resultForTask.analysis }
+              ? { ...task, analysis: resultForTask.analysis, analysisStatus: "complete", analysisError: undefined }
             : task;
         }),
       );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "AI分析に失敗しました。もう一度お試しください。";
+      setTasks((current) => current.map((task) => taskIds.includes(task.id)
+        ? { ...task, analysisError: message }
+        : task,
+      ));
     } finally {
-      setIsAnalyzing(false);
+      setAnalyzingTaskIds((current) => current.filter((id) => !taskIds.includes(id)));
     }
   }
 
@@ -251,12 +274,13 @@ export default function Home() {
           onSaveEdit={saveTaskEdit}
           expandedTaskId={expandedTaskId}
           onToggleExpanded={toggleExpanded}
+          analyzingTaskIds={analyzingTaskIds}
+          onRetryAnalyze={(task) => void analyzeTasks([task])}
+          isAnalyzing={isAnalyzing}
         />
       ) : screen === "analyze" ? (
         <PlanPanel
-          tasks={sortedTasks}
-          onAnalyze={analyzeTask}
-          isAnalyzing={isAnalyzing}
+          tasks={sortedTasks.filter((task) => task.analysisStatus !== "pending")}
           onToggleDone={toggleDone}
           onToggleSubtask={toggleSubtask}
           expandedTaskId={expandedTaskId}

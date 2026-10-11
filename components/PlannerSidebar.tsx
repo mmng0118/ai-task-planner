@@ -17,7 +17,7 @@ export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; 
           <span className="nav-glyph glyph-list" aria-hidden="true"><i /><i /><i /></span><span>タスク一覧</span>
         </button>
         <button type="button" className={`nav-item ${screen === "analyze" ? "active" : ""}`} onClick={() => onNavigate("analyze")}>
-          <span className="nav-glyph glyph-bars" aria-hidden="true"><i /><i /><i /></span><span>分析結果</span>
+          <span className="nav-glyph glyph-bars" aria-hidden="true"><i /><i /><i /></span><span>プラン</span>
         </button>
         <button type="button" className={`nav-item ${screen === "calendar" ? "active" : ""}`} onClick={() => onNavigate("calendar")}>
           <span className="nav-glyph glyph-calendar" aria-hidden="true" /><span>カレンダー</span>

@@ -8,6 +8,7 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   error?: boolean;
+  ariaLabel?: string;
 };
 
 function parseDate(value: string) {
@@ -37,7 +38,7 @@ function firstOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-export function DatePicker({ value, onChange, error = false }: Props) {
+export function DatePicker({ value, onChange, error = false, ariaLabel = "締め切り" }: Props) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const selectedDate = parseDate(value);
@@ -91,7 +92,7 @@ export function DatePicker({ value, onChange, error = false }: Props) {
           value={toDisplay(value)}
           placeholder="年 / 月 / 日"
           readOnly
-          aria-label="締め切り"
+          aria-label={ariaLabel}
           aria-required="true"
           aria-invalid={error}
           aria-haspopup="dialog"

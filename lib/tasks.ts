@@ -21,6 +21,8 @@ export type Task = {
   summary: string;
   status: TaskStatus;
   analysis: TaskAnalysis;
+  analysisStatus?: "pending" | "complete";
+  analysisError?: string;
   subtaskProgress?: boolean[];
   feedback?: TaskFeedback;
 };
@@ -78,4 +80,24 @@ export function formatDeadline(date: string) {
 export function formatShortDate(date: string) {
   const [, month, day] = date.split("-").map(Number);
   return `${month}/${day}`;
+}
+
+export function formatEstimatedHours(hours: number) {
+  const minutes = estimatedMinutes(hours);
+  const days = Math.floor(minutes / 1440);
+  const hoursInDay = Math.floor((minutes % 1440) / 60);
+  const remainingMinutes = minutes % 60;
+  const parts: string[] = [];
+
+  if (days > 0) parts.push(`${days}日`);
+  if (hoursInDay > 0) parts.push(`${hoursInDay}時間`);
+  if (remainingMinutes > 0) parts.push(`${remainingMinutes}分`);
+  return parts.join("");
+}
+
+export function estimatedMinutes(hours: number) {
+  const rawMinutes = Math.max(10, Math.round(hours * 60));
+  return rawMinutes <= 60
+    ? Math.round(rawMinutes / 10) * 10
+    : Math.round(rawMinutes / 30) * 30;
 }
