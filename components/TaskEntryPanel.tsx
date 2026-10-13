@@ -5,6 +5,7 @@ import { daysUntil, estimatedMinutes, formatEstimatedHours, type Task } from "..
 import { extractDocxText } from "../lib/docx";
 import { extractPdfText } from "../lib/pdf";
 import { DatePicker } from "./DatePicker";
+import { DifficultyFilter } from "./DifficultyFilter";
 
 type Props = {
   view: "add" | "list";
@@ -322,7 +323,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               
             })}
             {visibleTasks.length === 0 && (totalCount === 0
-              ? <p className="empty-state">該当するタスクはありません<br/><span className="empty-state-span">タスク</span>を登録してください</p>
+              ? <p className="empty-state">該当するタスクはありません<br/><span className="empty-state-span">タスクを登録</span>してください</p>
               : <p className="empty-state">条件に一致するタスクはありません</p>)}
           </div>
         </section>
@@ -333,14 +334,8 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
           <section className="task-edit-dialog calendar-filter-dialog" role="dialog" aria-modal="true" aria-labelledby="task-list-filter-title">
             <button className="dialog-close" type="button" aria-label="フィルターを閉じる" onClick={() => setFiltersOpen(false)}>×</button>
             <h2 id="task-list-filter-title">フィルター</h2>
-            <p className="task-edit-dialog-caption">表示するタスクの条件を選んでください</p>
             <div className="calendar-filter-fields">
-              <label>難易度
-                <select value={draftDifficulty} onChange={(event) => setDraftDifficulty(event.target.value)}>
-                  <option value="">すべて</option>
-                  {[1, 2, 3, 4, 5].map((level) => <option value={level} key={level}>★ {level}</option>)}
-                </select>
-              </label>
+              <DifficultyFilter value={draftDifficulty} onChange={setDraftDifficulty} />
               <div className="calendar-filter-date-field">
                 <span className="calendar-filter-field-label">締め切り期間</span>
                 <div className="calendar-filter-date-range">

@@ -87,7 +87,7 @@ export function PlanPanel({
         })}
         {tasks.length === 0 && (
           <div className="surface-card no-plan">
-            タスク一覧でタスクをまとめてAI分析すると、おすすめプランがここに表示されます。
+            タスクを登録すると、おすすめプランがここに表示されます。
           </div>
         )}
       </section>

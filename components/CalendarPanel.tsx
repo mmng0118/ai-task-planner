@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { estimatedMinutes, formatEstimatedHours, type Task } from "../lib/tasks";
 import { DatePicker } from "./DatePicker";
+import { DifficultyFilter } from "./DifficultyFilter";
 
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -170,14 +171,8 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
           <section className="task-edit-dialog calendar-filter-dialog" role="dialog" aria-modal="true" aria-labelledby="calendar-filter-title">
             <button className="dialog-close" type="button" aria-label="フィルターを閉じる" onClick={() => setFiltersOpen(false)}>×</button>
             <h2 id="calendar-filter-title">フィルター</h2>
-            <p className="task-edit-dialog-caption">表示するタスクの条件を選んでください</p>
             <div className="calendar-filter-fields">
-          <label>難易度
-            <select value={draftDifficulty} onChange={(event) => setDraftDifficulty(event.target.value)}>
-              <option value="">すべて</option>
-              {[1, 2, 3, 4, 5].map((level) => <option value={level} key={level}>★ {level}</option>)}
-            </select>
-          </label>
+          <DifficultyFilter value={draftDifficulty} onChange={setDraftDifficulty} />
           <div className="calendar-filter-date-field">
             <span className="calendar-filter-field-label">締め切り期間</span>
             <div className="calendar-filter-date-range">
@@ -243,7 +238,7 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
             </div>
           ) : <div className="calendar-day is-outside" role="gridcell" aria-hidden="true" key={`empty-${index}`} />)}
         </div>
-        {visibleTasks.length === 0 && <p className="calendar-empty">{normalizedQuery || hasFilters ? "条件に合うタスクはありません" : "タスクを登録すると、締め切りがここに表示されます。"}</p>}
+        {visibleTasks.length === 0 && (normalizedQuery || hasFilters) && <p className="calendar-empty">条件に合うタスクはありません</p>}
       </div>
     </section>
   );
