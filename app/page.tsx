@@ -19,8 +19,6 @@ import {
   type AnalyzeResponse,
 } from "../lib/tasks";
 
-const storageKey = "ai-task-planner.tasks.v1";
-
 type DatabaseTaskRow = {
   id: string;
   title: string;
@@ -68,44 +66,13 @@ export default function Home() {
     let cancelled = false;
 
     async function loadTasks() {
-      let legacyTasks: Task[] = [];
-
       try {
-        const saved = window.localStorage.getItem(storageKey);
-        if (saved) {
-          const parsedTasks = JSON.parse(saved) as Task[];
-          const starterTaskIds = new Set([
-            "sample-1",
-            "sample-2",
-            "sample-3",
-            "sample-4",
-          ]);
-          legacyTasks = parsedTasks.filter((task) => !starterTaskIds.has(task.id));
-        }
-      } catch {
-        window.localStorage.removeItem(storageKey);
-      }
-
-      try {
-        let rows = await fetchDatabaseTasks();
-        const existingIds = new Set(rows.map((row) => row.id));
-        const tasksToImport = legacyTasks.filter((task) => !existingIds.has(task.id));
-
-        for (const task of tasksToImport) {
-          await sendTaskMutation("POST", { task: toApiTask(task) });
-        }
-
-        if (legacyTasks.length > 0) {
-          rows = await fetchDatabaseTasks();
-          window.localStorage.removeItem(storageKey);
-        }
-
+        const rows = await fetchDatabaseTasks();
         if (cancelled) return;
         setTasks(rows.map(mapDatabaseTask));
         setPersistenceError("");
       } catch (error) {
         if (cancelled) return;
-        if (legacyTasks.length > 0) setTasks(legacyTasks);
         setPersistenceError(
           error instanceof Error
             ? `タスクをデータベースに読み込めませんでした: ${error.message}`
