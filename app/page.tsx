@@ -229,6 +229,8 @@ export default function Home() {
   async function analyzeTasks(tasksToAnalyze: Task[]) {
     if (tasksToAnalyze.length === 0) return;
     const taskIds = tasksToAnalyze.map((task) => task.id);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 65_000);
     setAnalyzingTaskIds((current) => [...new Set([...current, ...taskIds])]);
     setTasks((current) => current.map((task) => taskIds.includes(task.id)
       ? { ...task, analysisError: undefined }
@@ -248,6 +250,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
+        signal: controller.signal,
       });
       const responseText = await response.text();
       let responseBody: unknown;
@@ -301,12 +304,15 @@ export default function Home() {
       const saveResults = await Promise.all(analyzedTasks.map(saveTaskRecord));
       if (saveResults.every(Boolean)) setPersistenceError("");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "AI分析に失敗しました。もう一度お試しください。";
+      const message = error instanceof Error && error.name === "AbortError"
+        ? "AI分析が時間内に完了しませんでした。通信状況を確認して、もう一度お試しください。"
+        : error instanceof Error ? error.message : "AI分析に失敗しました。もう一度お試しください。";
       setTasks((current) => current.map((task) => taskIds.includes(task.id)
         ? { ...task, analysisError: message }
         : task,
       ));
     } finally {
+      window.clearTimeout(timeoutId);
       setAnalyzingTaskIds((current) => current.filter((id) => !taskIds.includes(id)));
     }
   }

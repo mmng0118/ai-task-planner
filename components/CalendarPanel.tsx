@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { estimatedMinutes, formatEstimatedHours, type Task } from "../lib/tasks";
 import { DatePicker } from "./DatePicker";
 import { DifficultyFilter } from "./DifficultyFilter";
+import { CalendarDateWheel } from "./CalendarDateWheel";
 
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
 export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }: { tasks: Task[]; query: string; onQueryChange: (query: string) => void; onOpenTaskInList: (task: Task) => void }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [searchSuggestionsOpen, setSearchSuggestionsOpen] = useState(false);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState("");
@@ -74,13 +76,16 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
   }, [focusedTaskId, shownMonth, visibleTasks]);
 
   useEffect(() => {
-    if (!filtersOpen) return;
+    if (!filtersOpen && !datePickerOpen) return;
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setFiltersOpen(false);
+      if (event.key === "Escape") {
+        setFiltersOpen(false);
+        setDatePickerOpen(false);
+      }
     }
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [filtersOpen]);
+  }, [datePickerOpen, filtersOpen]);
 
   function moveMonth(offset: number) {
     setShownMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
@@ -135,17 +140,24 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
       <div className="calendar-surface">
         <div className="calendar-toolbar">
           <h1 className="section-title" aria-live="polite">
-            {new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" }).format(shownMonth)}
+            <button className="calendar-title-picker" type="button" aria-label={`${new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" }).format(shownMonth)}を選択`} aria-haspopup="dialog" aria-expanded={datePickerOpen} onClick={() => setDatePickerOpen(true)}>
+              {new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" }).format(shownMonth)}
+            </button>
           </h1>
           <div className="calendar-controls">
             <button type="button" aria-label="前の月" onClick={() => moveMonth(-1)}>‹</button>
-            <button type="button" className="calendar-today-button" onClick={() => {
-              const today = new Date();
-              setShownMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-            }}>{shownMonth.getMonth() + 1}月</button>
+            <button type="button" className="calendar-today-button" aria-haspopup="dialog" aria-expanded={datePickerOpen} onClick={() => setDatePickerOpen(true)}>{shownMonth.getMonth() + 1}月</button>
             <button type="button" aria-label="次の月" onClick={() => moveMonth(1)}>›</button>
           </div>
         </div>
+        {datePickerOpen && <CalendarDateWheel
+          initialDate={shownMonth}
+          onCancel={() => setDatePickerOpen(false)}
+          onSelect={(date) => {
+            setShownMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+            setDatePickerOpen(false);
+          }}
+        />}
 
         <div className="calendar-search-row">
           <div className={`calendar-search-wrap${searchSuggestionsOpen && searchSuggestions.length ? " has-suggestions" : ""}`} onBlur={(event) => {

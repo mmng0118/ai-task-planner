@@ -90,10 +90,26 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .calendar-surface { width: 100%; min-width: 0; padding: 24px; border-radius: 16px; background: #fff; }
 .calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .calendar-toolbar .section-title { margin: 0; font-size: 20px; }
+.calendar-title-picker { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; text-underline-offset: 4px; }
+.calendar-title-picker:hover { text-decoration: underline; }
 .calendar-controls { display: flex; align-items: center; gap: 8px; }
 .calendar-controls button { display: grid; min-width: 36px; height: 34px; place-items: center; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--gold); font-size: 22px; line-height: 1; }
 .calendar-controls button:hover { background: var(--paper); }
 .calendar-controls .calendar-today-button { font-size: 12px; font-weight: 700; }
+.calendar-today-button[aria-haspopup="dialog"] { min-width: 58px; }
+.calendar-date-wheel-dialog { width: min(100%, 440px); }
+.task-edit-dialog.calendar-date-wheel-dialog h2 { margin: 0 0 20px; color: var(--gold); font-size: 20px; font-weight: 800; text-align: center; }
+.calendar-date-wheel-date-input { display: block; width: 100%; height: 38px; margin: -5px 0 14px; padding: 5px 10px; border: 0; border-bottom: 1px solid #dedede; border-radius: 0; background: #fff; color: #45423d; font-size: 13px; }
+.calendar-date-wheel-date-input::placeholder { color: #aaa; }
+.calendar-date-wheels { display: grid; position: relative; grid-template-columns: 1.35fr 1fr 1fr; gap: 8px; background: linear-gradient(rgb(166 135 66 / 28%), rgb(166 135 66 / 28%)) left 72px / 100% 1px no-repeat, linear-gradient(rgb(166 135 66 / 28%), rgb(166 135 66 / 28%)) left 107px / 100% 1px no-repeat, linear-gradient(rgb(244 240 227 / 72%), rgb(244 240 227 / 72%)) left 73px / 100% 34px no-repeat; }
+.calendar-date-wheel-column { display: grid; min-width: 0; }
+.calendar-date-wheel-list { position: relative; height: 180px; overflow-y: auto; padding: 72px 0; background: transparent; scrollbar-width: none; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.calendar-date-wheel-list::-webkit-scrollbar { display: none; }
+.calendar-date-wheel-option { display: grid; width: 100%; height: 36px; place-items: center; padding: 0 3px; border: 0; background: transparent; color: #8a8a8a; font-size: 14px; line-height: 1; scroll-snap-align: center; scroll-snap-stop: always; }
+.calendar-date-wheel-option.is-selected { color: var(--gold); font-size: 15px; font-weight: 600; }
+.calendar-date-wheel-list:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.calendar-date-wheel-actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+.calendar-date-wheel-actions .coral-button, .calendar-date-wheel-actions .task-edit-cancel { min-height: 38px; }
 .calendar-search-row { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; }
 .calendar-search-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
 .calendar-search-wrap.has-suggestions { z-index: 8; }
@@ -220,7 +236,7 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .field-error { color: #c95349; font-size: 11px; font-weight: 500; }
 .document-attach-control { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; color: #737373; font-size: 11px; }
 .task-form .document-upload-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.task-form .document-attach-button { display: inline-flex; width: fit-content; min-height: 30px; grid-template-columns: none; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #bdbbb8; border-radius: 999px; background: #fff; color: var(--blue); cursor: pointer; }
+.task-form .document-attach-button { display: inline-flex; width: fit-content; min-height: 30px; grid-template-columns: none; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #bdbbb8; border-radius: 999px; background: #fff; color: var(--blue); font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer; }
 .document-attach-button:hover { background: #f1f6f9; }
 .document-upload-input:focus-visible + .document-attach-button { outline: 2px solid var(--blue); outline-offset: 2px; }
 .document-attach-result { display: flex; max-width: 100%; align-items: center; gap: 6px; }
@@ -446,6 +462,8 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .entry-workspace { height: auto; gap: 16px; }
   .entry-columns { flex: 0 0 auto; min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .entry-card, .task-list-card { height: auto; min-height: auto; padding: 36px 22px 24px; }
+  .task-form .task-summary-field { grid-template-rows: auto minmax(180px, 1fr); }
+  .task-form .task-summary-field textarea { min-height: 180px; }
   .task-list-card { border-radius: 14px; }
   .task-list { flex: 0 0 auto; max-height: 340px; }
   .plan-workspace { padding: 20px 15px; }
@@ -467,6 +485,10 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .difficulty-stars { letter-spacing: 0; }
   .analysis-detail { grid-column: 2; }
   .task-edit-dialog { padding: 28px 22px; }
+  .calendar-date-wheel-dialog { padding: 26px 18px; }
+  .calendar-date-wheels { gap: 5px; }
+  .calendar-date-wheel-option { font-size: 12px; }
+  .calendar-date-wheel-option.is-selected { font-size: 14px; }
   .task-edit-numbers { grid-template-columns: minmax(0, 1fr); }
 }
 
