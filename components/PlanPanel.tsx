@@ -25,7 +25,6 @@ export function PlanPanel({
         <span className="plan-heading-dots" aria-hidden="true"><i /><i /><i /></span>
         <div className="plan-heading-copy">
           <h2>おすすめプラン</h2>
-          <p>プランにはAI分析済みのタスクのみを表示しています。</p>
         </div>
         <span className="plan-heading-dots" aria-hidden="true"><i /><i /><i /></span>
       </div>
@@ -35,7 +34,6 @@ export function PlanPanel({
           const expanded = expandedTaskId === task.id;
           return (
             <article className={`priority-row ${rankColors[index % rankColors.length]}`} key={task.id}>
-              <div className="timeline-marker" aria-hidden="true"><i /></div>
               <div className={`priority-card ${expanded ? "is-expanded" : ""}`}>
                 <span className="rank-number" aria-label={`${index + 1}番目`}>{task.status === "done" ? "✓" : index + 1}</span>
                 <div className="priority-main">

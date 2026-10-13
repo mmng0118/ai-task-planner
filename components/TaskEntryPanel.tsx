@@ -12,10 +12,10 @@ type Props = {
   totalCount: number;
   query: string;
   onQueryChange: (query: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>, title: string, deadline: string, summary: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>, title: string, deadline: string, summary: string) => Promise<boolean>;
   onToggleDone: (task: Task) => void;
-  onDeleteTasks: (taskIds: string[]) => void;
-  onSaveEdit: (task: Task) => void;
+  onDeleteTasks: (taskIds: string[]) => Promise<boolean>;
+  onSaveEdit: (task: Task) => Promise<boolean>;
   expandedTaskId: string | null;
   onToggleExpanded: (taskId: string) => void;
   analyzingTaskIds: string[];
@@ -129,12 +129,11 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
       : [...current, taskId]);
   }
 
-  function deleteSelectedTasks() {
+  async function deleteSelectedTasks() {
     if (selectedTaskIds.length === 0) return;
     const confirmed = window.confirm(`選択した${selectedTaskIds.length}件のタスクを削除しますか？\nこの操作は取り消せません。`);
     if (!confirmed) return;
-    onDeleteTasks(selectedTaskIds);
-    cancelTaskSelection();
+    if (await onDeleteTasks(selectedTaskIds)) cancelTaskSelection();
   }
 
   async function handleDocumentChange(event: ChangeEvent<HTMLInputElement>) {
@@ -172,7 +171,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
     }
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     if (isReadingFile) {
       event.preventDefault();
       return;
@@ -187,8 +186,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
       summary.trim(),
       attachmentText ? `【${attachmentFileName}から抽出した文章】\n${attachmentText}` : "",
     ].filter(Boolean).join("\n\n");
-    onSubmit(event, title, deadline, fullSummary);
-    if (event.defaultPrevented) {
+    if (await onSubmit(event, title, deadline, fullSummary)) {
       setTitle("");
       setDeadline("");
       setSummary("");
@@ -205,7 +203,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
     setEditErrors({ title: false, deadline: false });
   }
 
-  function saveEdit(event: FormEvent<HTMLFormElement>) {
+  async function saveEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingTask) return;
     if (!editingTask.title.trim() || !editingTask.deadline) {
@@ -222,12 +220,12 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
       subtasks.length !== editingTask.analysis.subtasks.length ||
       subtasks.some((subtask, index) => subtask !== editingTask.analysis.subtasks[index]);
 
-    onSaveEdit({
+    const saved = await onSaveEdit({
       ...editingTask,
       analysis: { ...editingTask.analysis, subtasks },
       subtaskProgress: subtasksChanged ? undefined : editingTask.subtaskProgress,
     });
-    setEditingTask(null);
+    if (saved) setEditingTask(null);
   }
 
   return (
