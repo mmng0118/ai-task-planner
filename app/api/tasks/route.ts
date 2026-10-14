@@ -20,7 +20,6 @@ type TaskPayload = {
   feedback?: {
     difficulty: number;
     actualHours: number;
-    reflection: string;
   };
 };
 
@@ -76,7 +75,6 @@ function toTaskRow(task: TaskPayload, userId: string) {
     feedback_actual_minutes: task.feedback
       ? Math.round(task.feedback.actualHours * 60)
       : null,
-    feedback_reflection: task.feedback?.reflection ?? null,
   };
 }
 

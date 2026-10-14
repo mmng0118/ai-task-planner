@@ -32,7 +32,6 @@ type DatabaseTaskRow = {
   analysis_status: Task["analysisStatus"] | null;
   feedback_difficulty: number | null;
   feedback_actual_minutes: number | null;
-  feedback_reflection: string | null;
   subtasks?: Array<{
     title: string;
     is_done: boolean;
@@ -414,7 +413,6 @@ function mapDatabaseTask(row: DatabaseTaskRow): Task {
         ? {
             difficulty: row.feedback_difficulty,
             actualHours: row.feedback_actual_minutes / 60,
-            reflection: row.feedback_reflection ?? "",
           }
         : undefined,
   };

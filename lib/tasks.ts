@@ -11,7 +11,6 @@ export type TaskAnalysis = {
 export type TaskFeedback = {
   difficulty: number;
   actualHours: number;
-  reflection: string;
 };
 
 export type Task = {
