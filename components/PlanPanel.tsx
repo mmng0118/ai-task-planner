@@ -47,8 +47,8 @@ export function PlanPanel({
                 <div className="priority-side">
                   <div className="priority-facts">
                     <div className="priority-facts-top">
-                      <span><i className="fact-clock" aria-hidden="true">◷</i>{formatEstimatedHours(task.analysis.estimatedHours)}</span>
-                      <span><i className="fact-deadline" aria-hidden="true" />{formatShortDate(task.deadline)}</span>
+                      <span className="priority-time-fact"><i className="fact-clock" aria-hidden="true">◷</i>{formatEstimatedHours(task.analysis.estimatedHours)}</span>
+                      <span className="priority-deadline-fact"><i className="fact-deadline" aria-hidden="true" />{formatShortDate(task.deadline)}</span>
                     </div>
                     <span className="difficulty-stars" aria-label={`難易度 ${task.analysis.difficulty}/5`}>
                       {"★".repeat(task.analysis.difficulty)}<i>{"★".repeat(5 - task.analysis.difficulty)}</i>

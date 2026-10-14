@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent, type TextareaHTMLAttributes } from "react";
 import { daysUntil, estimatedMinutes, formatEstimatedHours, type Task } from "../lib/tasks";
 import { extractDocxText } from "../lib/docx";
 import { extractPdfText } from "../lib/pdf";
@@ -36,7 +36,11 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isSelectingTasks, setIsSelectingTasks] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [editSubtasks, setEditSubtasks] = useState("");
+  const [editSubtasks, setEditSubtasks] = useState<string[]>([]);
+  const editSubtasksRef = useRef<string[]>([]);
+  const dragSubtaskIndexRef = useRef<number | null>(null);
+  const dragPointerIdRef = useRef<number | null>(null);
+  const [draggingSubtaskIndex, setDraggingSubtaskIndex] = useState<number | null>(null);
   const [editErrors, setEditErrors] = useState({ title: false, deadline: false });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState("");
@@ -49,6 +53,52 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [draftDeadlineTo, setDraftDeadlineTo] = useState("");
   const [draftMinutesMin, setDraftMinutesMin] = useState(0);
   const [draftMinutesMax, setDraftMinutesMax] = useState(480);
+
+  const replaceEditSubtasks = useCallback((nextSubtasks: string[]) => {
+    editSubtasksRef.current = nextSubtasks;
+    setEditSubtasks(nextSubtasks);
+  }, []);
+
+  const moveEditSubtask = useCallback((from: number, to: number) => {
+    const current = editSubtasksRef.current;
+    if (from === to || from < 0 || to < 0 || from >= current.length || to >= current.length) return;
+    const next = [...current];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    replaceEditSubtasks(next);
+  }, [replaceEditSubtasks]);
+
+  useEffect(() => {
+    if (draggingSubtaskIndex === null) return;
+
+    function moveWithPointer(event: PointerEvent) {
+      if (event.pointerId !== dragPointerIdRef.current) return;
+      const element = document.elementFromPoint(event.clientX, event.clientY);
+      const row = element?.closest<HTMLElement>("[data-subtask-index]");
+      const to = Number(row?.dataset.subtaskIndex);
+      const from = dragSubtaskIndexRef.current;
+      if (!row || !Number.isInteger(to) || from === null || to === from) return;
+      moveEditSubtask(from, to);
+      dragSubtaskIndexRef.current = to;
+      setDraggingSubtaskIndex(to);
+    }
+
+    function finishPointerDrag(event: PointerEvent) {
+      if (event.pointerId !== dragPointerIdRef.current) return;
+      dragPointerIdRef.current = null;
+      dragSubtaskIndexRef.current = null;
+      setDraggingSubtaskIndex(null);
+    }
+
+    document.addEventListener("pointermove", moveWithPointer);
+    document.addEventListener("pointerup", finishPointerDrag);
+    document.addEventListener("pointercancel", finishPointerDrag);
+    return () => {
+      document.removeEventListener("pointermove", moveWithPointer);
+      document.removeEventListener("pointerup", finishPointerDrag);
+      document.removeEventListener("pointercancel", finishPointerDrag);
+    };
+  }, [draggingSubtaskIndex, moveEditSubtask]);
 
   useEffect(() => {
     setSelectedTaskIds((current) => current.filter((id) => tasks.some((task) => task.id === id)));
@@ -63,8 +113,12 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [filtersOpen]);
 
-  const longestTaskMinutes = Math.max(0, ...tasks.map((task) => estimatedMinutes(task.analysis.estimatedHours)));
+  const longestTaskMinutes = Math.max(0, editingTask ? estimatedMinutes(editingTask.analysis.estimatedHours) : 0, ...tasks.map((task) => estimatedMinutes(task.analysis.estimatedHours)));
   const sliderMaxMinutes = Math.max(480, Math.ceil((longestTaskMinutes + 30) / 30) * 30);
+  const editTimeOptions = createEstimatedTimeOptions(sliderMaxMinutes);
+  const editTimeIndex = editingTask
+    ? findNearestTimeOption(editTimeOptions, estimatedMinutes(editingTask.analysis.estimatedHours))
+    : 0;
   const visibleTasks = useMemo(() => tasks.filter((task) => {
     if (difficultyFilter && task.analysis.difficulty !== Number(difficultyFilter)) return false;
     if (deadlineFrom && task.deadline < deadlineFrom) return false;
@@ -200,8 +254,24 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
 
   function beginEdit(task: Task) {
     setEditingTask(task);
-    setEditSubtasks(task.analysis.subtasks.join("\n"));
+    replaceEditSubtasks([...task.analysis.subtasks]);
     setEditErrors({ title: false, deadline: false });
+  }
+
+  function updateEditSubtask(index: number, value: string) {
+    replaceEditSubtasks(editSubtasksRef.current.map((subtask, currentIndex) => currentIndex === index ? value : subtask));
+  }
+
+  function removeEditSubtask(index: number) {
+    replaceEditSubtasks(editSubtasksRef.current.filter((_, currentIndex) => currentIndex !== index));
+  }
+
+  function startSubtaskDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    dragSubtaskIndexRef.current = index;
+    dragPointerIdRef.current = event.pointerId;
+    setDraggingSubtaskIndex(index);
   }
 
   async function saveEdit(event: FormEvent<HTMLFormElement>) {
@@ -213,10 +283,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
     }
     setEditErrors({ title: false, deadline: false });
 
-    const subtasks = editSubtasks
-      .split("\n")
-      .map((subtask) => subtask.trim())
-      .filter(Boolean);
+    const subtasks = editSubtasks.map((subtask) => subtask.trim()).filter(Boolean);
     const subtasksChanged =
       subtasks.length !== editingTask.analysis.subtasks.length ||
       subtasks.some((subtask, index) => subtask !== editingTask.analysis.subtasks[index]);
@@ -239,7 +306,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
           <form className="task-form" noValidate onSubmit={submit}>
             <label>タスク名<input required aria-invalid={formErrors.title} maxLength={100} value={title} onChange={(event) => { setTitle(event.target.value); if (event.target.value.trim()) setFormErrors((errors) => ({ ...errors, title: false })); }} placeholder="例：レポートを提出する" />{formErrors.title && <span className="field-error">タスク名を入力してください</span>}</label>
             <div className="task-form-field"><span className="task-form-field-label">締め切り</span><DatePicker value={deadline} onChange={(value) => { setDeadline(value); if (value) setFormErrors((errors) => ({ ...errors, deadline: false })); }} error={formErrors.deadline} /></div>
-            <label className="task-summary-field">概要<textarea rows={4} value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="課題の内容を詳しく書くと正確な分析ができます" /></label>
+            <label className="task-summary-field">概要<AutoResizeTextarea rows={4} value={summary} onChange={setSummary} placeholder="課題の内容を詳しく書くと正確な分析ができます" /></label>
             <div className="document-attach-control">
               <input id="task-document" className="document-upload-input" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleDocumentChange} />
               <label className="document-attach-button" htmlFor="task-document"><span aria-hidden="true">↥</span> PDF・Wordを選択</label>
@@ -282,6 +349,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               const days = daysUntil(task.deadline);
               return <div className="task-list-entry" key={task.id}>
                 <article className={`task-list-item ${task.status === "done" ? "task-done" : ""}`}>
+                <div className="task-list-header">
                 <button className={`task-list-main${isSelectingTasks ? " is-selecting" : ""}${selectedTaskIds.includes(task.id) ? " is-selected" : ""}`} type="button" onClick={() => isSelectingTasks ? toggleTaskSelection(task.id) : onToggleExpanded(task.id)} aria-expanded={isSelectingTasks ? undefined : expanded} aria-pressed={isSelectingTasks ? selectedTaskIds.includes(task.id) : undefined} aria-label={isSelectingTasks ? `${task.title}を${selectedTaskIds.includes(task.id) ? "選択解除" : "選択"}` : undefined}>
                   {isSelectingTasks && <span className="task-select-indicator" aria-hidden="true">{selectedTaskIds.includes(task.id) ? "✓" : ""}</span>}
                   <span className="list-task-title">{task.title}</span>
@@ -290,8 +358,13 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                   </span>}
                 </button>
                 {!isSelectingTasks && <div className="task-actions">
+                  {!editingTask && <button className="task-edit" type="button" onClick={() => beginEdit(task)}>
+                    <span aria-hidden="true">✎</span>
+                    <span>タスクを編集する</span>
+                  </button>}
                   <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
                 </div>}
+                </div>
                 {expanded && !isSelectingTasks &&
                   <div className="task-list-detail">
                   {task.analysisStatus === "pending" && <div className={`task-analysis-inline${task.analysisError ? " has-error" : ""}`} role={task.analysisError ? "alert" : "status"}>
@@ -308,16 +381,8 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                     {task.analysisStatus !== "pending" && <>
                     {task.analysis.subtasks.length > 0 && <div className="task-list-subtasks">
                       <strong className="task-list-subtasks-title">サブタスク</strong>
-                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "○"}</span><span>{subtask}</span></li>; })}</ul></div>}
+                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "−"}</span><span>{subtask}</span></li>; })}</ul></div>}
                     </>}</div>}
-                {expanded && !editingTask && !isSelectingTasks && (
-                  <div className="task-edit-row">
-                    <button className="task-edit" type="button" onClick={() => beginEdit(task)}>
-                      <span aria-hidden="true">✎</span>
-                      <span>タスクを編集する</span>
-                    </button>
-                  </div>
-                )}
                 </article>
               </div>;
               
@@ -387,11 +452,10 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
           <section className="task-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="task-edit-title">
             <button className="dialog-close" type="button" onClick={() => setEditingTask(null)} aria-label="閉じる">×</button>
             <h2 id="task-edit-title">タスクを編集</h2>
-            <p className="task-edit-dialog-caption">{editingTask.analysisStatus === "pending" ? "登録内容を編集できます。AI分析後に分析結果を確認できます。" : "登録内容とAIの分析結果を編集できます"}</p>
             <form className="task-edit-form" noValidate onSubmit={saveEdit}>
               <label>タスク名<input required aria-invalid={editErrors.title} maxLength={100} value={editingTask.title} onChange={(event) => { setEditingTask({ ...editingTask, title: event.target.value }); if (event.target.value.trim()) setEditErrors((errors) => ({ ...errors, title: false })); }} />{editErrors.title && <span className="field-error">タスク名を入力してください</span>}</label>
               <div className="task-edit-date-field"><span className="task-edit-date-label">締め切り</span><DatePicker value={editingTask.deadline} onChange={(value) => { setEditingTask({ ...editingTask, deadline: value }); if (value) setEditErrors((errors) => ({ ...errors, deadline: false })); }} error={editErrors.deadline} /></div>
-              <label>入力した概要<textarea rows={3} value={editingTask.summary} onChange={(event) => setEditingTask({ ...editingTask, summary: event.target.value })} /></label>
+              <label>入力した概要<AutoResizeTextarea rows={3} value={editingTask.summary} onChange={(value) => setEditingTask({ ...editingTask, summary: value })} /></label>
               {editingTask.analysisStatus !== "pending" && <>
               <div className="task-edit-numbers">
                 <fieldset className="difficulty-field task-edit-difficulty">
@@ -412,9 +476,60 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                     ))}
                   </div>
                 </fieldset>
-                <label>予想時間（h）<input required type="number" min={0.17} step="any" value={editingTask.analysis.estimatedHours} onChange={(event) => setEditingTask({ ...editingTask, analysis: { ...editingTask.analysis, estimatedHours: Number(event.target.value) } })} /></label>
+                <label className="task-edit-time-control">
+                  <span className="task-edit-time-heading"><span>予想時間</span><strong>{formatEstimatedHours(editingTask.analysis.estimatedHours)}</strong></span>
+                  <input
+                    className="task-edit-time-slider"
+                    type="range"
+                    min={0}
+                    max={editTimeOptions.length - 1}
+                    step={1}
+                    value={editTimeIndex}
+                    aria-label="予想時間"
+                    aria-valuetext={formatEstimatedHours(editTimeOptions[editTimeIndex] / 60)}
+                    onChange={(event) => {
+                      const minutes = editTimeOptions[Number(event.target.value)];
+                      setEditingTask({ ...editingTask, analysis: { ...editingTask.analysis, estimatedHours: minutes / 60 } });
+                    }}
+                  />
+                </label>
               </div>
-              <label>サブタスク（1行につき1タスクまで）<textarea rows={4} value={editSubtasks} onChange={(event) => setEditSubtasks(event.target.value)} /></label>
+              <fieldset className="task-edit-subtasks">
+                <legend>サブタスク</legend>
+                <div className="task-edit-subtask-list">
+                  {editSubtasks.map((subtask, index) => (
+                    <div className={`task-edit-subtask-row${draggingSubtaskIndex === index ? " is-dragging" : ""}`} key={index} data-subtask-index={index}>
+                      <button
+                        className="task-edit-subtask-grip"
+                        type="button"
+                        aria-label={`サブタスク${index + 1}を並べ替え`}
+                        onPointerDown={(event) => startSubtaskDrag(index, event)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                          event.preventDefault();
+                          moveEditSubtask(index, Math.max(0, Math.min(editSubtasks.length - 1, index + (event.key === "ArrowUp" ? -1 : 1))));
+                        }}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                      </button>
+                      <input
+                        aria-label={`サブタスク${index + 1}`}
+                        value={subtask}
+                        onChange={(event) => updateEditSubtask(index, event.target.value)}
+                        placeholder={`サブタスク${index + 1}`}
+                      />
+                      <button className="task-edit-subtask-remove" type="button" onClick={() => removeEditSubtask(index)} aria-label={`サブタスク${index + 1}を削除`}>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 7h16M10 11v6m4-6v6M5.5 7l1 13h11l1-13M9 7V4h6v3" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button className="task-edit-subtask-add" type="button" onClick={() => replaceEditSubtasks([...editSubtasksRef.current, ""])}>＋ サブタスクを追加</button>
+              </fieldset>
               </>}
               <div className="task-edit-buttons">
                 <button className="coral-button" type="submit">保存する</button>
@@ -426,4 +541,47 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
       )}
     </section>
   );
+}
+
+function AutoResizeTextarea({ value, onChange, ...props }: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange"> & {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const originalHeightRef = useRef<number | null>(null);
+
+  const resizeTextareaToContent = useCallback((textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+    if (originalHeightRef.current === null) originalHeightRef.current = textarea.getBoundingClientRect().height;
+    textarea.style.height = "auto";
+    const styles = window.getComputedStyle(textarea);
+    const borders = Number.parseFloat(styles.borderTopWidth) + Number.parseFloat(styles.borderBottomWidth);
+    textarea.style.height = `${Math.max(originalHeightRef.current, textarea.scrollHeight + borders)}px`;
+  }, []);
+
+  useLayoutEffect(() => {
+    resizeTextareaToContent(textareaRef.current);
+  }, [resizeTextareaToContent, value]);
+
+  return <textarea
+    {...props}
+    ref={textareaRef}
+    value={value}
+    onChange={(event) => {
+      onChange(event.currentTarget.value);
+      resizeTextareaToContent(event.currentTarget);
+    }}
+  />;
+}
+
+function createEstimatedTimeOptions(maxMinutes: number) {
+  const options = [10, 20, 30, 40, 50, 60];
+  for (let minutes = 90; minutes <= maxMinutes; minutes += 30) options.push(minutes);
+  return options;
+}
+
+function findNearestTimeOption(options: number[], minutes: number) {
+  return options.reduce((bestIndex, option, index) =>
+    Math.abs(option - minutes) < Math.abs(options[bestIndex] - minutes) ? index : bestIndex,
+  0);
 }

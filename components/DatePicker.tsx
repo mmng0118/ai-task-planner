@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { CalendarDateWheel } from "./CalendarDateWheel";
 
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -43,6 +44,7 @@ export function DatePicker({ value, onChange, error = false, ariaLabel = "締め
   const rootRef = useRef<HTMLDivElement>(null);
   const selectedDate = parseDate(value);
   const [open, setOpen] = useState(false);
+  const [wheelOpen, setWheelOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => firstOfMonth(selectedDate ?? new Date()));
 
   useEffect(() => {
@@ -81,6 +83,11 @@ export function DatePicker({ value, onChange, error = false, ariaLabel = "締め
 
   function isSelected(day: number) {
     return selectedDate !== null && selectedDate.getFullYear() === visibleMonth.getFullYear() && selectedDate.getMonth() === visibleMonth.getMonth() && selectedDate.getDate() === day;
+  }
+
+  function isToday(day: number) {
+    const today = new Date();
+    return today.getFullYear() === visibleMonth.getFullYear() && today.getMonth() === visibleMonth.getMonth() && today.getDate() === day;
   }
 
   return (
@@ -122,7 +129,7 @@ export function DatePicker({ value, onChange, error = false, ariaLabel = "締め
         <div className="date-picker-calendar" id={`${id}-calendar`} role="dialog" aria-label="締め切りを選択">
           <div className="date-picker-month">
             <button type="button" aria-label="前の月" onClick={() => setVisibleMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
-            <strong>{visibleMonth.getFullYear()}年{visibleMonth.getMonth() + 1}月</strong>
+            <button className="date-picker-month-title" type="button" aria-label={`${visibleMonth.getFullYear()}年${visibleMonth.getMonth() + 1}月を選択`} aria-haspopup="dialog" aria-expanded={wheelOpen} onClick={() => { setOpen(false); setWheelOpen(true); }}>{visibleMonth.getFullYear()}年{visibleMonth.getMonth() + 1}月</button>
             <button type="button" aria-label="次の月" onClick={() => setVisibleMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
           </div>
           <div className="date-picker-grid" aria-label="日付">
@@ -130,15 +137,28 @@ export function DatePicker({ value, onChange, error = false, ariaLabel = "締め
             {calendarCells.map(({ key, day }) => day === null
               ? <span className="date-picker-blank" aria-hidden="true" key={key} />
               : <button
-                  className={`date-picker-day ${isSelected(day) ? "selected" : ""}`}
+                  className={`date-picker-day${isSelected(day) ? " selected" : ""}${isToday(day) ? " is-today" : ""}`}
                   type="button"
                   aria-pressed={isSelected(day)}
+                  aria-current={isToday(day) ? "date" : undefined}
                   aria-label={`${visibleMonth.getFullYear()}年${visibleMonth.getMonth() + 1}月${day}日`}
                   key={key}
                   onClick={() => chooseDay(day)}
                 >{day}</button>)}
           </div>
         </div>
+      )}
+      {wheelOpen && (
+        <CalendarDateWheel
+          initialDate={selectedDate ?? visibleMonth}
+          onCancel={() => setWheelOpen(false)}
+          onSelect={(date) => {
+            onChange(toIso(date));
+            setVisibleMonth(firstOfMonth(date));
+            setWheelOpen(false);
+            setOpen(false);
+          }}
+        />
       )}
     </div>
   );

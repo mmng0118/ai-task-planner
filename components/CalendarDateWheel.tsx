@@ -30,7 +30,7 @@ export function CalendarDateWheel({ initialDate, onCancel, onSelect }: Props) {
   }
 
   function commitDateInput() {
-    const match = dateInput.match(/^(\d{4})-?(\d{1,2})-?(\d{1,2})$/);
+    const match = dateInput.match(/^(\d{4})\s*(?:年|-|\/|\.)?\s*(\d{1,2})\s*(?:月|-|\/|\.)?\s*(\d{1,2})\s*日?$/);
     if (!match) {
       setDateInput(formatDate(new Date(year, month - 1, day)));
       return;
@@ -52,16 +52,16 @@ export function CalendarDateWheel({ initialDate, onCancel, onSelect }: Props) {
     <div className="dialog-backdrop calendar-wheel-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onCancel();
     }}>
-      <section className="task-edit-dialog calendar-date-wheel-dialog" role="dialog" aria-modal="true" aria-labelledby="calendar-date-wheel-title">
-        <h2 id="calendar-date-wheel-title">日付を選択</h2>
+      <section className="task-edit-dialog calendar-date-wheel-dialog" role="dialog" aria-modal="true" aria-label="日付選択">
         <input
           className="calendar-date-wheel-date-input"
           type="text"
           inputMode="numeric"
           aria-label="日付を直接入力"
-          placeholder="YYYY-MM-DD"
+          placeholder="YYYY年 MM月 DD日"
           value={dateInput}
           onChange={(event) => setDateInput(event.target.value)}
+          onFocus={(event) => event.currentTarget.select()}
           onBlur={commitDateInput}
           onKeyDown={(event) => {
             if (event.key === "Enter") event.currentTarget.blur();
@@ -82,10 +82,7 @@ export function CalendarDateWheel({ initialDate, onCancel, onSelect }: Props) {
 }
 
 function formatDate(date: Date) {
-  const yearText = String(date.getFullYear()).padStart(4, "0");
-  const monthText = String(date.getMonth() + 1).padStart(2, "0");
-  const dayText = String(date.getDate()).padStart(2, "0");
-  return `${yearText}-${monthText}-${dayText}`;
+  return `${date.getFullYear()}年 ${date.getMonth() + 1}月 ${date.getDate()}日`;
 }
 
 function WheelColumn({ label, values, value, jumpToken, format, onChange }: {
