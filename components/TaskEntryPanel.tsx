@@ -35,6 +35,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [formErrors, setFormErrors] = useState({ title: false, deadline: false });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isSelectingTasks, setIsSelectingTasks] = useState(false);
+  const [taskListTab, setTaskListTab] = useState<"todo" | "done">("todo");
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [editSubtasks, setEditSubtasks] = useState<string[]>([]);
   const editSubtasksRef = useRef<string[]>([]);
@@ -129,6 +130,15 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
     return true;
   }), [deadlineFrom, deadlineTo, difficultyFilter, minutesMin, minutesMax, tasks]);
   const hasFilters = Boolean(difficultyFilter || deadlineFrom || deadlineTo || minutesMin > 0 || minutesMax !== null);
+  const tabTasks = visibleTasks.filter((task) => task.status === taskListTab);
+  const todoCount = tasks.filter((task) => task.status === "todo").length;
+  const doneCount = tasks.filter((task) => task.status === "done").length;
+
+  function changeTaskListTab(tab: "todo" | "done") {
+    setTaskListTab(tab);
+    setIsSelectingTasks(false);
+    setSelectedTaskIds([]);
+  }
 
   function openFilters() {
     setDraftDifficulty(difficultyFilter);
@@ -330,6 +340,10 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               <h2 className="section-title">タスク一覧</h2>
               <span className="task-count-badge" aria-label={`全${totalCount}件`}><span>全</span><strong>{totalCount}</strong><span>件</span></span>
             </div>
+            <div className="task-list-tabs" role="group" aria-label="タスクの状態">
+              <button className={`task-list-tab${taskListTab === "todo" ? " is-active" : ""}`} type="button" aria-pressed={taskListTab === "todo"} onClick={() => changeTaskListTab("todo")}>未完了 <span>{todoCount}</span></button>
+              <button className={`task-list-tab${taskListTab === "done" ? " is-active" : ""}`} type="button" aria-pressed={taskListTab === "done"} onClick={() => changeTaskListTab("done")}>完了済み <span>{doneCount}</span></button>
+            </div>
             <div className="calendar-search-wrap task-list-search-wrap">
               <label className="search-field calendar-search"><span className="search-icon" aria-hidden="true" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="タスクを検索" aria-label="タスクを検索" /></label>
               <button className={`calendar-filter-toggle${hasFilters ? " has-filters" : ""}`} type="button" aria-label={`フィルター${hasFilters ? `適用中 ${[difficultyFilter, deadlineFrom || deadlineTo, minutesMin > 0 || minutesMax !== null].filter(Boolean).length}件` : ""}`} aria-expanded={filtersOpen} aria-haspopup="dialog" onClick={openFilters}>
@@ -341,10 +355,10 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               <span className="task-selection-count">{selectedTaskIds.length}件選択中</span>
               <button className="task-edit-cancel task-bulk-cancel" type="button" onClick={cancelTaskSelection}>キャンセル</button>
               <button className="task-bulk-delete" type="button" disabled={selectedTaskIds.length === 0} onClick={deleteSelectedTasks}>選択したタスクを削除</button>
-            </> : visibleTasks.length > 0 && <button className="task-bulk-start" type="button" onClick={startTaskSelection}>タスクを取り消す</button>}
+            </> : tabTasks.length > 0 && <button className="task-bulk-start" type="button" onClick={startTaskSelection}>タスクを取り消す</button>}
           </div>
-          <div className="task-list" id="task-list-panel" aria-label="登録済みタスク">
-            {visibleTasks.map((task) => {
+          <div className="task-list" id="task-list-panel" aria-label={taskListTab === "todo" ? "未完了タスク" : "完了済みタスク"}>
+            {tabTasks.map((task) => {
               const expanded = expandedTaskId === task.id;
               const days = daysUntil(task.deadline);
               return <div className="task-list-entry" key={task.id}>
@@ -387,9 +401,11 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               </div>;
               
             })}
-            {visibleTasks.length === 0 && (totalCount === 0
+            {tabTasks.length === 0 && (tasks.length === 0
               ? <p className="empty-state">該当するタスクはありません<br/><span className="empty-state-span">タスクを登録</span>してください</p>
-              : <p className="empty-state">条件に一致するタスクはありません</p>)}
+              : hasFilters || query.trim()
+                ? <p className="empty-state">条件に一致するタスクはありません</p>
+                : <p className="empty-state">{taskListTab === "done" ? "完了したタスクはありません" : "未完了のタスクはありません"}</p>)}
           </div>
         </section>
         )}

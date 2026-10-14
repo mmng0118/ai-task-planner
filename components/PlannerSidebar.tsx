@@ -9,7 +9,7 @@ export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; 
     <aside className="sidebar">
       <picture className="brand-lockup">
         <source media="(max-width: 760px)" srcSet="/images/AITaskPlanner_noText.png" />
-        <Image className="brand-logo" src="/images/AITaskPlanner_logo.png" alt="AI Task Planner" width={2172} height={724} priority />
+        <Image className="brand-logo" src="/images/AITaskPlanner_logo.png?v=20261014" alt="AI Task Planner" width={2172} height={724} priority unoptimized />
       </picture>
       <nav className="side-nav" aria-label="メインメニュー">
         <button type="button" className={`nav-item ${screen === "add" ? "active" : ""}`} onClick={() => onNavigate("add")}>

@@ -8,11 +8,6 @@ export type TaskAnalysis = {
   tip: string;
 };
 
-export type TaskFeedback = {
-  difficulty: number;
-  actualHours: number;
-};
-
 export type Task = {
   id: string;
   title: string;
@@ -23,7 +18,6 @@ export type Task = {
   analysisStatus?: "pending" | "complete";
   analysisError?: string;
   subtaskProgress?: boolean[];
-  feedback?: TaskFeedback;
 };
 
 export type AnalyzeRequest = {

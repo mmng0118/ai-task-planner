@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { CompletionDialog } from "../components/CompletionDialog";
 import { CalendarPanel } from "../components/CalendarPanel";
 import {
   PlannerSidebar,
@@ -14,7 +13,6 @@ import {
   daysUntil,
   initialTasks,
   type Task,
-  type TaskFeedback,
   type AnalyzeRequest,
   type AnalyzeResponse,
 } from "../lib/tasks";
@@ -30,8 +28,6 @@ type DatabaseTaskRow = {
   tip: string | null;
   status: Task["status"];
   analysis_status: Task["analysisStatus"] | null;
-  feedback_difficulty: number | null;
-  feedback_actual_minutes: number | null;
   subtasks?: Array<{
     title: string;
     is_done: boolean;
@@ -44,7 +40,6 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [persistenceError, setPersistenceError] = useState("");
   const [query, setQuery] = useState("");
-  const [feedbackTask, setFeedbackTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [analyzingTaskIds, setAnalyzingTaskIds] = useState<string[]>([]);
   const isAnalyzing = analyzingTaskIds.length > 0;
@@ -141,26 +136,15 @@ export default function Home() {
     return true;
   }
 
-  function saveFeedback(feedback: TaskFeedback) {
-    if (!feedbackTask) return;
-    const updatedTask = { ...feedbackTask, status: "done" as const, feedback };
-    setTasks((current) => current.map((task) => task.id === updatedTask.id ? updatedTask : task));
+  function toggleDone(task: Task) {
+    const updatedTask = {
+      ...task,
+      status: task.status === "done" ? "todo" as const : "done" as const,
+    };
+    setTasks((current) => current.map((item) => item.id === task.id ? updatedTask : item));
     void saveTaskRecord(updatedTask).then((saved) => {
       if (saved) setPersistenceError("");
     });
-    setFeedbackTask(null);
-  }
-
-  function toggleDone(task: Task) {
-    if (task.status === "done") {
-      const updatedTask = { ...task, status: "todo" as const, feedback: undefined };
-      setTasks((current) => current.map((item) => item.id === task.id ? updatedTask : item));
-      void saveTaskRecord(updatedTask).then((saved) => {
-        if (saved) setPersistenceError("");
-      });
-    } else {
-      setFeedbackTask(task);
-    }
   }
 
   function toggleSubtask(taskId: string, subtaskIndex: number) {
@@ -350,13 +334,6 @@ export default function Home() {
       ) : (
         <CalendarPanel tasks={filteredTasks} query={query} onQueryChange={setQuery} onOpenTaskInList={openTaskInList} />
       )}
-      {feedbackTask && (
-        <CompletionDialog
-          task={feedbackTask}
-          onCancel={() => setFeedbackTask(null)}
-          onSave={saveFeedback}
-        />
-      )}
     </main>
   );
 }
@@ -407,14 +384,6 @@ function mapDatabaseTask(row: DatabaseTaskRow): Task {
       tip: row.tip ?? fallback.tip,
     },
     subtaskProgress: subtasks.map((subtask) => subtask.is_done),
-    feedback:
-      typeof row.feedback_difficulty === "number" &&
-      typeof row.feedback_actual_minutes === "number"
-        ? {
-            difficulty: row.feedback_difficulty,
-            actualHours: row.feedback_actual_minutes / 60,
-          }
-        : undefined,
   };
 }
 
@@ -428,7 +397,6 @@ function toApiTask(task: Task) {
     analysisStatus: task.analysisStatus ?? "pending",
     analysis: task.analysis,
     subtaskProgress: task.subtaskProgress,
-    feedback: task.feedback,
   };
 }
 

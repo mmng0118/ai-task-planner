@@ -17,10 +17,6 @@ type TaskPayload = {
     tip: string;
   };
   subtaskProgress?: boolean[];
-  feedback?: {
-    difficulty: number;
-    actualHours: number;
-  };
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -71,10 +67,6 @@ function toTaskRow(task: TaskPayload, userId: string) {
     tip: task.analysis.tip,
     status: task.status,
     analysis_status: task.analysisStatus,
-    feedback_difficulty: task.feedback?.difficulty ?? null,
-    feedback_actual_minutes: task.feedback
-      ? Math.round(task.feedback.actualHours * 60)
-      : null,
   };
 }
 
