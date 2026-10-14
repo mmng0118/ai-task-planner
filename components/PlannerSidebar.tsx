@@ -1,14 +1,16 @@
 "use client";
 
+import Image from "next/image";
+
 export type PlannerScreen = "add" | "list" | "analyze" | "calendar";
 
 export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; onNavigate: (screen: PlannerScreen) => void }) {
   return (
     <aside className="sidebar">
-      <div className="brand-lockup" aria-label="AI Task Planner">
-        <span className="brand-name">AI Task Planner</span>
-        <span className="brand-dots" aria-hidden="true"><i /><i /><i /></span>
-      </div>
+      <picture className="brand-lockup">
+        <source media="(max-width: 760px)" srcSet="/images/AITaskPlanner_noText.png" />
+        <Image className="brand-logo" src="/images/AITaskPlanner_logo.png" alt="AI Task Planner" width={2172} height={724} priority />
+      </picture>
       <nav className="side-nav" aria-label="メインメニュー">
         <button type="button" className={`nav-item ${screen === "add" ? "active" : ""}`} onClick={() => onNavigate("add")}>
           <span className="nav-glyph glyph-plus" aria-hidden="true">＋</span><span>タスク登録</span>
