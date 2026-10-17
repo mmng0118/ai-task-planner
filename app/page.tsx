@@ -13,6 +13,7 @@ import {
   daysUntil,
   initialTasks,
   type Task,
+  type TaskSubtask,
   type AnalyzeRequest,
   type AnalyzeResponse,
 } from "../lib/tasks";
@@ -30,8 +31,11 @@ type DatabaseTaskRow = {
   analysis_status: Task["analysisStatus"] | null;
   subtasks?: Array<{
     title: string;
+    description: string | null;
     is_done: boolean;
     position: number;
+    estimated_minutes: number | null;
+    difficulty: number | null;
   }>;
 };
 
@@ -315,6 +319,7 @@ export default function Home() {
           onQueryChange={setQuery}
           onSubmit={addTask}
           onToggleDone={toggleDone}
+          onToggleSubtask={toggleSubtask}
           onDeleteTasks={deleteTasks}
           onSaveEdit={saveTaskEdit}
           expandedTaskId={expandedTaskId}
@@ -325,11 +330,9 @@ export default function Home() {
         />
       ) : screen === "analyze" ? (
         <PlanPanel
-          tasks={sortedTasks.filter((task) => task.analysisStatus !== "pending")}
-          onToggleDone={toggleDone}
+          tasks={sortedTasks}
           onToggleSubtask={toggleSubtask}
-          expandedTaskId={expandedTaskId}
-          onToggleExpanded={toggleExpanded}
+          onOpenTaskInList={openTaskInList}
         />
       ) : (
         <CalendarPanel tasks={filteredTasks} query={query} onQueryChange={setQuery} onOpenTaskInList={openTaskInList} />
@@ -362,6 +365,23 @@ function mapDatabaseTask(row: DatabaseTaskRow): Task {
   const subtasks = [...(row.subtasks ?? [])].sort(
     (a, b) => a.position - b.position,
   );
+  const needsSubtaskAnalysis =
+    row.analysis_status === "complete" &&
+    (subtasks.length === 0 || subtasks.some((subtask) =>
+      typeof subtask.description !== "string" || !subtask.description.trim() ||
+      typeof subtask.estimated_minutes !== "number" || typeof subtask.difficulty !== "number",
+    ));
+  const totalEstimatedMinutes = row.estimated_minutes ?? Math.round(fallback.estimatedHours * 60);
+  const fallbackSubtaskMinutes = Math.max(
+    10,
+    Math.round(totalEstimatedMinutes / Math.max(1, subtasks.length) / 10) * 10,
+  );
+  const analyzedSubtasks: TaskSubtask[] = subtasks.map((subtask) => ({
+    title: subtask.title,
+    description: subtask.description ?? "",
+    estimatedMinutes: subtask.estimated_minutes ?? fallbackSubtaskMinutes,
+    difficulty: subtask.difficulty ?? row.difficulty ?? fallback.difficulty,
+  }));
 
   return {
     id: row.id,
@@ -369,7 +389,7 @@ function mapDatabaseTask(row: DatabaseTaskRow): Task {
     deadline: row.deadline,
     summary: row.summary,
     status: row.status,
-    analysisStatus: row.analysis_status ?? "pending",
+    analysisStatus: needsSubtaskAnalysis ? "pending" : row.analysis_status ?? "pending",
     analysis: {
       summary: row.analysis_summary ?? fallback.summary,
       difficulty: row.difficulty ?? fallback.difficulty,
@@ -377,10 +397,7 @@ function mapDatabaseTask(row: DatabaseTaskRow): Task {
         row.estimated_minutes === null
           ? fallback.estimatedHours
           : row.estimated_minutes / 60,
-      subtasks:
-        row.analysis_status === "complete"
-          ? subtasks.map((subtask) => subtask.title)
-          : fallback.subtasks,
+      subtasks: row.analysis_status === "complete" ? analyzedSubtasks : fallback.subtasks,
       tip: row.tip ?? fallback.tip,
     },
     subtaskProgress: subtasks.map((subtask) => subtask.is_done),

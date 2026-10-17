@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent, type TextareaHTMLAttributes } from "react";
-import { daysUntil, estimatedMinutes, formatEstimatedHours, type Task } from "../lib/tasks";
+import { daysUntil, estimatedMinutes, formatEstimatedHours, type Task, type TaskSubtask } from "../lib/tasks";
 import { extractDocxText } from "../lib/docx";
 import { extractPdfText } from "../lib/pdf";
 import { DatePicker } from "./DatePicker";
@@ -15,6 +15,7 @@ type Props = {
   onQueryChange: (query: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>, title: string, deadline: string, summary: string) => Promise<boolean>;
   onToggleDone: (task: Task) => void;
+  onToggleSubtask: (taskId: string, subtaskIndex: number) => void;
   onDeleteTasks: (taskIds: string[]) => Promise<boolean>;
   onSaveEdit: (task: Task) => Promise<boolean>;
   expandedTaskId: string | null;
@@ -24,7 +25,7 @@ type Props = {
   isAnalyzing: boolean;
 };
 
-export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onDeleteTasks, onSaveEdit, expandedTaskId, onToggleExpanded, analyzingTaskIds, onRetryAnalyze, isAnalyzing }: Props) {
+export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, onSubmit, onToggleDone, onToggleSubtask, onDeleteTasks, onSaveEdit, expandedTaskId, onToggleExpanded, analyzingTaskIds, onRetryAnalyze, isAnalyzing }: Props) {
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState("");
   const [summary, setSummary] = useState("");
@@ -36,9 +37,10 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isSelectingTasks, setIsSelectingTasks] = useState(false);
   const [taskListTab, setTaskListTab] = useState<"todo" | "done">("todo");
+  const [expandedOriginalTextIds, setExpandedOriginalTextIds] = useState<string[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [editSubtasks, setEditSubtasks] = useState<string[]>([]);
-  const editSubtasksRef = useRef<string[]>([]);
+  const [editSubtasks, setEditSubtasks] = useState<TaskSubtask[]>([]);
+  const editSubtasksRef = useRef<TaskSubtask[]>([]);
   const dragSubtaskIndexRef = useRef<number | null>(null);
   const dragPointerIdRef = useRef<number | null>(null);
   const [draggingSubtaskIndex, setDraggingSubtaskIndex] = useState<number | null>(null);
@@ -55,7 +57,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [draftMinutesMin, setDraftMinutesMin] = useState(0);
   const [draftMinutesMax, setDraftMinutesMax] = useState(480);
 
-  const replaceEditSubtasks = useCallback((nextSubtasks: string[]) => {
+  const replaceEditSubtasks = useCallback((nextSubtasks: TaskSubtask[]) => {
     editSubtasksRef.current = nextSubtasks;
     setEditSubtasks(nextSubtasks);
   }, []);
@@ -264,12 +266,12 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
 
   function beginEdit(task: Task) {
     setEditingTask(task);
-    replaceEditSubtasks([...task.analysis.subtasks]);
+    replaceEditSubtasks(task.analysis.subtasks.map((subtask) => ({ ...subtask })));
     setEditErrors({ title: false, deadline: false });
   }
 
   function updateEditSubtask(index: number, value: string) {
-    replaceEditSubtasks(editSubtasksRef.current.map((subtask, currentIndex) => currentIndex === index ? value : subtask));
+    replaceEditSubtasks(editSubtasksRef.current.map((subtask, currentIndex) => currentIndex === index ? { ...subtask, title: value } : subtask));
   }
 
   function removeEditSubtask(index: number) {
@@ -293,21 +295,32 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
     }
     setEditErrors({ title: false, deadline: false });
 
-    const subtasks = editSubtasks.map((subtask) => subtask.trim()).filter(Boolean);
+    const subtasks = editSubtasks
+      .map((subtask) => {
+        const title = subtask.title.trim();
+        return { ...subtask, title, description: subtask.description.trim() || title };
+      })
+      .filter((subtask) => subtask.title);
     const subtasksChanged =
       subtasks.length !== editingTask.analysis.subtasks.length ||
-      subtasks.some((subtask, index) => subtask !== editingTask.analysis.subtasks[index]);
+      subtasks.some((subtask, index) => subtask.title !== editingTask.analysis.subtasks[index]?.title);
 
     const saved = await onSaveEdit({
       ...editingTask,
-      analysis: { ...editingTask.analysis, subtasks },
+      analysis: {
+        ...editingTask.analysis,
+        subtasks,
+        estimatedHours: estimatedMinutes(
+          subtasks.reduce((sum, subtask) => sum + subtask.estimatedMinutes, 0) / 60,
+        ) / 60,
+      },
       subtaskProgress: subtasksChanged ? undefined : editingTask.subtaskProgress,
     });
     if (saved) setEditingTask(null);
   }
 
   return (
-    <section className="workspace entry-workspace">
+    <section className={`workspace entry-workspace${view === "list" ? " task-list-workspace" : ""}`}>
       <div className="entry-columns single-column">
         {view === "add" && (
         <section className="surface-card entry-card">
@@ -364,6 +377,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               return <div className="task-list-entry" key={task.id}>
                 <article className={`task-list-item ${task.status === "done" ? "task-done" : ""}`}>
                 <div className="task-list-header">
+                {!isSelectingTasks && <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>}
                 <button className={`task-list-main${isSelectingTasks ? " is-selecting" : ""}${selectedTaskIds.includes(task.id) ? " is-selected" : ""}`} type="button" onClick={() => isSelectingTasks ? toggleTaskSelection(task.id) : onToggleExpanded(task.id)} aria-expanded={isSelectingTasks ? undefined : expanded} aria-pressed={isSelectingTasks ? selectedTaskIds.includes(task.id) : undefined} aria-label={isSelectingTasks ? `${task.title}を${selectedTaskIds.includes(task.id) ? "選択解除" : "選択"}` : undefined}>
                   {isSelectingTasks && <span className="task-select-indicator" aria-hidden="true">{selectedTaskIds.includes(task.id) ? "✓" : ""}</span>}
                   <span className="list-task-title">{task.title}</span>
@@ -376,7 +390,6 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                     <span aria-hidden="true">✎</span>
                     <span>タスクを編集する</span>
                   </button>}
-                  <button className="task-check" type="button" aria-label={task.status === "done" ? `${task.title}を未完了に戻す` : `${task.title}を完了する`} onClick={() => onToggleDone(task)}>{task.status === "done" ? "✓" : ""}</button>
                 </div>}
                 </div>
                 {expanded && !isSelectingTasks &&
@@ -392,10 +405,24 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                   </div>}
                   <div className="task-list-analysis">
                     <strong className="task-list-analysis-title">概要</strong><p>{task.analysisStatus === "complete" ? task.analysis.summary : task.summary || "概要は登録されていません。"}</p></div>
+                  <div className="task-list-original-text">
+                    <strong className="task-list-original-text-title">入力内容・抽出テキスト</strong>
+                    {expandedOriginalTextIds.includes(task.id) ? (
+                      <>
+                        <p id={`original-text-${task.id}`} className="task-list-original-text-full">{task.summary || "入力内容はありません。"}</p>
+                        <button className="task-list-original-text-toggle" type="button" aria-expanded="true" aria-controls={`original-text-${task.id}`} onClick={() => setExpandedOriginalTextIds((current) => current.filter((id) => id !== task.id))}>全文を閉じる ↑</button>
+                      </>
+                    ) : (
+                      <>
+                        <div id={`original-text-${task.id}`} className="task-list-original-text-preview" aria-hidden="true">{task.summary || "入力内容はありません。"}</div>
+                        <button className="task-list-original-text-toggle" type="button" aria-expanded="false" aria-controls={`original-text-${task.id}`} onClick={() => setExpandedOriginalTextIds((current) => [...current, task.id])}>全文を見る ↓</button>
+                      </>
+                    )}
+                  </div>
                     {task.analysisStatus !== "pending" && <>
                     {task.analysis.subtasks.length > 0 && <div className="task-list-subtasks">
                       <strong className="task-list-subtasks-title">サブタスク</strong>
-                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><span className="task-list-subtask-mark" aria-hidden="true">{done ? "✓" : "−"}</span><span>{subtask}</span></li>; })}</ul></div>}
+                      <ul>{task.analysis.subtasks.map((subtask, index) => { const done = task.subtaskProgress?.[index] ?? false; return <li className={done ? "is-done" : ""} key={`${task.id}-subtask-${index}`}><input className="task-list-subtask-mark" type="checkbox" checked={done} onChange={() => onToggleSubtask(task.id, index)} aria-label={`${subtask.title}を${done ? "未完了に戻す" : "完了"}`} /><span>{subtask.title}</span></li>; })}</ul></div>}
                     </>}</div>}
                 </article>
               </div>;
@@ -532,7 +559,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                       </button>
                       <input
                         aria-label={`サブタスク${index + 1}`}
-                        value={subtask}
+                        value={subtask.title}
                         onChange={(event) => updateEditSubtask(index, event.target.value)}
                         placeholder={`サブタスク${index + 1}`}
                       />
@@ -544,7 +571,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                     </div>
                   ))}
                 </div>
-                <button className="task-edit-subtask-add" type="button" onClick={() => replaceEditSubtasks([...editSubtasksRef.current, ""])}>＋ サブタスクを追加</button>
+                <button className="task-edit-subtask-add" type="button" onClick={() => replaceEditSubtasks([...editSubtasksRef.current, { title: "", description: "", estimatedMinutes: 15, difficulty: 1 }])}>＋ サブタスクを追加</button>
               </fieldset>
               </>}
               <div className="task-edit-buttons">

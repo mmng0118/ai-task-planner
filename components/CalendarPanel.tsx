@@ -241,8 +241,9 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
                   <div className="calendar-task-wrap" key={task.id}>
                     <span id={`calendar-task-${task.id}`} className={`calendar-task${task.status === "done" ? " is-done" : ""}`} tabIndex={0} aria-describedby={`calendar-task-summary-${task.id}`}>{task.title}</span>
                     <div className="calendar-task-tooltip" id={`calendar-task-summary-${task.id}`} role="group" aria-label={`${task.title}の概要とリンク`}>
-                      <span>{task.analysis.summary || task.summary || "概要は登録されていません。"}</span>
+                      <strong className="calendar-task-tooltip-title">{task.title}</strong>
                       <button className="calendar-task-tooltip-link" type="button" onClick={() => onOpenTaskInList(task)}>タスク一覧で開く →</button>
+                      <span>{task.analysis.summary || task.summary || "概要は登録されていません。"}</span>
                     </div>
                   </div>
                 ))}

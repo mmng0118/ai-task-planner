@@ -13,7 +13,12 @@ type TaskPayload = {
     summary: string;
     difficulty: number;
     estimatedHours: number;
-    subtasks: string[];
+    subtasks: Array<{
+      title: string;
+      description: string;
+      estimatedMinutes: number;
+      difficulty: number;
+    }>;
     tip: string;
   };
   subtaskProgress?: boolean[];
@@ -35,11 +40,22 @@ function isTaskPayload(value: unknown): value is TaskPayload {
     (value.status === "todo" || value.status === "done") &&
     (value.analysisStatus === "pending" || value.analysisStatus === "complete") &&
     typeof analysis.summary === "string" &&
-    typeof analysis.difficulty === "number" &&
-    typeof analysis.estimatedHours === "number" &&
+    typeof analysis.difficulty === "number" && Number.isInteger(analysis.difficulty) && analysis.difficulty >= 1 && analysis.difficulty <= 5 &&
+    typeof analysis.estimatedHours === "number" && Number.isFinite(analysis.estimatedHours) && analysis.estimatedHours > 0 &&
     Array.isArray(analysis.subtasks) &&
-    analysis.subtasks.every((subtask) => typeof subtask === "string") &&
-    typeof analysis.tip === "string"
+    analysis.subtasks.every((subtask) =>
+      isRecord(subtask) &&
+      typeof subtask.title === "string" && subtask.title.trim().length > 0 &&
+      typeof subtask.description === "string" &&
+      typeof subtask.estimatedMinutes === "number" &&
+      Number.isInteger(subtask.estimatedMinutes) && subtask.estimatedMinutes >= 5 && subtask.estimatedMinutes <= 360 &&
+      typeof subtask.difficulty === "number" &&
+      Number.isInteger(subtask.difficulty) && subtask.difficulty >= 1 && subtask.difficulty <= 5
+    ) &&
+    typeof analysis.tip === "string" &&
+    (value.subtaskProgress === undefined || (
+      Array.isArray(value.subtaskProgress) && value.subtaskProgress.every((done) => typeof done === "boolean")
+    ))
   );
 }
 
@@ -82,9 +98,12 @@ async function replaceSubtasks(
   if (deleteError) return deleteError;
   if (task.analysis.subtasks.length === 0) return null;
 
-  const rows = task.analysis.subtasks.map((title, position) => ({
+  const rows = task.analysis.subtasks.map((subtask, position) => ({
     task_id: task.id,
-    title,
+    title: subtask.title,
+    description: subtask.description,
+    estimated_minutes: subtask.estimatedMinutes,
+    difficulty: subtask.difficulty,
     is_done: task.subtaskProgress?.[position] ?? false,
     position,
   }));

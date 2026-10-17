@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
-import type { AnalyzeRequest, AnalyzeResponse } from "../../../lib/tasks";
+import { estimatedMinutes, type AnalyzeRequest, type AnalyzeResponse } from "../../../lib/tasks";
 
 export const maxDuration = 60;
 
@@ -23,7 +23,16 @@ const responseSchema = {
               estimatedHours: { type: "number" },
               subtasks: {
                 type: "array",
-                items: { type: "string" },
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    estimatedMinutes: { type: "integer" },
+                    difficulty: { type: "integer" },
+                  },
+                  required: ["title", "description", "estimatedMinutes", "difficulty"],
+                },
               },
               tip: { type: "string" },
             },
@@ -54,7 +63,8 @@ export async function POST(request: Request) {
   5=非常に大きな分量と高度な複雑さの両方が明確に示されている場合のみ
   入力に情報が少ない場合や規模が不明な場合は星2を選ぶ。難易度はタスクごとに独立して判断するが、無理に差をつけず、根拠が同程度なら同じ評価にする。
 - estimatedHours: 集中して実際に作業する時間の合計を時間単位の数値で返す。待ち時間や日数ではなく、課題に明記された分量と必要な作業だけを見積もる。通常の作業ペースと、資料が手元にある前提にする。入力にない大量の調査・推敲・やり直しを想定して時間を足さない。最悪の場合の時間ではなく、最もありそうな所要時間を出し、念のための上乗せをしない。課題の規模が不明な場合は大規模と決めつけず、小さめの一般的な課題として見積もる。1時間以下は10分刻み、1時間超は30分刻み。
-- subtasks: 課題の規模に合わせて5〜8個。具体的で短い一作業に分け、必要な順に並べる。重複や入力にない作業は避ける。
+- subtasks: 課題の規模に合わせて必要な数だけ作る。時間で機械的に分割せず、行動や成果がひとまとまりになる作業単位にする。小さな課題を無理に細分化せず、大きな課題は意味のある区切りにする。入力にない作業を追加しない。配列は同じタスク内で取り組む順に並べる。
+  各要素にはtitle、description、estimatedMinutes、difficultyを含める。titleは短い行動・成果の見出しにする。descriptionはそのサブタスクだけに対応する、具体的な進め方または完了状態を1〜2文で説明する。titleをそのまま繰り返したり、親タスク全体の概要を全サブタスクに使い回したりしない。入力に根拠のある範囲で、作業対象や成果物を具体化する。estimatedMinutesはその作業単位を集中して行う場合の所要時間（5分単位、5〜360分の整数）。difficultyはその作業単位自体の難しさを1〜5で控えめに評価する。1=ごく簡単、2=一般的な作業、3=明確に考える負荷がある、4=複雑、5=非常に複雑。迷ったら低い方を選ぶ。サブタスクの所要時間の合計はestimatedHoursと大きくずれないようにする。所要時間は作業を分割する基準ではなく、優先順位を決めるための目安。
 - tip: 課題に即した2〜3文。最初に取りかかる作業と重要な注意点を具体的に伝え、入力にない条件を断定しない。
 - idは入力値をそのまま使う。
 
@@ -79,7 +89,29 @@ ${JSON.stringify(body.tasks)}`,
       );
     }
 
-    const result = JSON.parse(interaction.output_text) as AnalyzeResponse;
+    const parsed = JSON.parse(interaction.output_text) as unknown;
+    if (!isAnalyzeResponse(parsed)) {
+      return NextResponse.json(
+        { error: "AIの分析結果に必要なサブタスク情報がありませんでした。" },
+        { status: 502 },
+      );
+    }
+
+    const result: AnalyzeResponse = {
+      tasks: parsed.tasks.map(({ id, analysis }) => {
+        const totalMinutes = analysis.subtasks.reduce(
+          (sum, subtask) => sum + subtask.estimatedMinutes,
+          0,
+        );
+        return {
+          id,
+          analysis: {
+            ...analysis,
+            estimatedHours: estimatedMinutes(totalMinutes / 60) / 60,
+          },
+        };
+      }),
+    };
     return NextResponse.json(result);
   } catch (error) {
     console.error("Gemini API error:", error);
@@ -94,4 +126,29 @@ ${JSON.stringify(body.tasks)}`,
       { status: 500 },
     );
   }
+}
+
+function isAnalyzeResponse(value: unknown): value is AnalyzeResponse {
+  if (!isRecord(value) || !Array.isArray(value.tasks)) return false;
+  return value.tasks.every((task) => {
+    if (!isRecord(task) || typeof task.id !== "string" || !isRecord(task.analysis)) return false;
+    const analysis = task.analysis;
+    return (
+      typeof analysis.summary === "string" &&
+      Number.isInteger(analysis.difficulty) && Number(analysis.difficulty) >= 1 && Number(analysis.difficulty) <= 5 &&
+      typeof analysis.estimatedHours === "number" && Number.isFinite(analysis.estimatedHours) && analysis.estimatedHours > 0 &&
+      Array.isArray(analysis.subtasks) && analysis.subtasks.length > 0 && analysis.subtasks.every((subtask) =>
+        isRecord(subtask) &&
+        typeof subtask.title === "string" && subtask.title.trim().length > 0 &&
+        typeof subtask.description === "string" && subtask.description.trim().length > 0 &&
+        Number.isInteger(subtask.estimatedMinutes) && Number(subtask.estimatedMinutes) >= 5 && Number(subtask.estimatedMinutes) <= 360 &&
+        Number.isInteger(subtask.difficulty) && Number(subtask.difficulty) >= 1 && Number(subtask.difficulty) <= 5
+      ) &&
+      typeof analysis.tip === "string"
+    );
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
