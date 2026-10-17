@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-export type PlannerScreen = "add" | "list" | "analyze" | "calendar";
+export type PlannerScreen = "add" | "list" | "analyze" | "calendar" | "settings";
 
 export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; onNavigate: (screen: PlannerScreen) => void }) {
   return (
@@ -25,6 +25,9 @@ export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; 
           <span className="nav-glyph glyph-calendar" aria-hidden="true" /><span>カレンダー</span>
         </button>
       </nav>
+      <button type="button" className={`nav-item settings-nav-item ${screen === "settings" ? "active" : ""}`} onClick={() => onNavigate("settings")}>
+        <span className="nav-glyph glyph-settings" aria-hidden="true">⚙</span><span>設定</span>
+      </button>
     </aside>
   );
 }

@@ -33,7 +33,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const [attachmentText, setAttachmentText] = useState("");
   const [attachmentError, setAttachmentError] = useState("");
   const [isReadingFile, setIsReadingFile] = useState(false);
-  const [formErrors, setFormErrors] = useState({ title: false, deadline: false });
+  const [formErrors, setFormErrors] = useState({ deadline: false, content: false });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isSelectingTasks, setIsSelectingTasks] = useState(false);
   const [taskListTab, setTaskListTab] = useState<"todo" | "done">("todo");
@@ -44,7 +44,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   const dragSubtaskIndexRef = useRef<number | null>(null);
   const dragPointerIdRef = useRef<number | null>(null);
   const [draggingSubtaskIndex, setDraggingSubtaskIndex] = useState<number | null>(null);
-  const [editErrors, setEditErrors] = useState({ title: false, deadline: false });
+  const [editErrors, setEditErrors] = useState({ deadline: false });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState("");
   const [deadlineFrom, setDeadlineFrom] = useState("");
@@ -230,6 +230,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
           : "Word文書から文字を取り出せませんでした。");
       }
       setAttachmentText(extractedText);
+      setFormErrors((errors) => ({ ...errors, content: false }));
     } catch (error) {
       setAttachmentFileName("");
       setAttachmentError(error instanceof Error ? error.message : "ファイルを読み込めませんでした。");
@@ -243,12 +244,13 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
       event.preventDefault();
       return;
     }
-    if (!title.trim() || !deadline) {
+    const hasTaskContent = Boolean(summary.trim() || attachmentText.trim());
+    if (!deadline || !hasTaskContent) {
       event.preventDefault();
-      setFormErrors({ title: !title.trim(), deadline: !deadline });
+      setFormErrors({ deadline: !deadline, content: !hasTaskContent });
       return;
     }
-    setFormErrors({ title: false, deadline: false });
+    setFormErrors({ deadline: false, content: false });
     const fullSummary = [
       summary.trim(),
       attachmentText ? `【${attachmentFileName}から抽出した文章】\n${attachmentText}` : "",
@@ -260,14 +262,14 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
       setAttachmentFileName("");
       setAttachmentText("");
       setAttachmentError("");
-      setFormErrors({ title: false, deadline: false });
+      setFormErrors({ deadline: false, content: false });
     }
   }
 
   function beginEdit(task: Task) {
     setEditingTask(task);
     replaceEditSubtasks(task.analysis.subtasks.map((subtask) => ({ ...subtask })));
-    setEditErrors({ title: false, deadline: false });
+    setEditErrors({ deadline: false });
   }
 
   function updateEditSubtask(index: number, value: string) {
@@ -289,11 +291,11 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
   async function saveEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingTask) return;
-    if (!editingTask.title.trim() || !editingTask.deadline) {
-      setEditErrors({ title: !editingTask.title.trim(), deadline: !editingTask.deadline });
+    if (!editingTask.deadline) {
+      setEditErrors({ deadline: true });
       return;
     }
-    setEditErrors({ title: false, deadline: false });
+    setEditErrors({ deadline: false });
 
     const subtasks = editSubtasks
       .map((subtask) => {
@@ -327,9 +329,9 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
           <div className="color-ruler" aria-hidden="true"><i /><i /><i /></div>
           <h1 className="section-title">タスク登録</h1>
           <form className="task-form" noValidate onSubmit={submit}>
-            <label>タスク名<input required aria-invalid={formErrors.title} maxLength={100} value={title} onChange={(event) => { setTitle(event.target.value); if (event.target.value.trim()) setFormErrors((errors) => ({ ...errors, title: false })); }} placeholder="例：レポートを提出する" />{formErrors.title && <span className="field-error">タスク名を入力してください</span>}</label>
+            <label>タスク名（任意）<input maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例：レポートを提出する" /></label>
             <div className="task-form-field"><span className="task-form-field-label">締め切り</span><DatePicker value={deadline} onChange={(value) => { setDeadline(value); if (value) setFormErrors((errors) => ({ ...errors, deadline: false })); }} error={formErrors.deadline} /></div>
-            <label className="task-summary-field">概要<AutoResizeTextarea rows={4} value={summary} onChange={setSummary} placeholder="課題の内容を詳しく書くと正確な分析ができます" /></label>
+            <label className="task-summary-field">概要<AutoResizeTextarea rows={4} value={summary} onChange={(value) => { setSummary(value); if (value.trim() || attachmentText.trim()) setFormErrors((errors) => ({ ...errors, content: false })); }} placeholder="概要を入力または資料をアップロードしてください" /></label>
             <div className="document-attach-control">
               <input id="task-document" className="document-upload-input" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleDocumentChange} />
               <label className="document-attach-button" htmlFor="task-document"><span aria-hidden="true">↥</span> PDF・Wordを選択</label>
@@ -340,6 +342,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
               </div>}
               {attachmentError && <span className="document-attach-error" role="alert">{attachmentError}</span>}
             </div>
+            {formErrors.content && <span className="field-error" role="alert">概要を入力するか、PDF・Wordファイルを選択してください</span>}
             {isAnalyzing && <p className="task-submit-status" role="status">AIがタスクを分析しています。完了するとプランに反映されます。</p>}
             <button className="coral-button submit-button" type="submit" disabled={isReadingFile || isAnalyzing}>{isReadingFile ? "読み取り中…" : isAnalyzing ? "AI分析中…" : "登録する"}</button>
           </form>
@@ -496,7 +499,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
             <button className="dialog-close" type="button" onClick={() => setEditingTask(null)} aria-label="閉じる">×</button>
             <h2 id="task-edit-title">タスクを編集</h2>
             <form className="task-edit-form" noValidate onSubmit={saveEdit}>
-              <label>タスク名<input required aria-invalid={editErrors.title} maxLength={100} value={editingTask.title} onChange={(event) => { setEditingTask({ ...editingTask, title: event.target.value }); if (event.target.value.trim()) setEditErrors((errors) => ({ ...errors, title: false })); }} />{editErrors.title && <span className="field-error">タスク名を入力してください</span>}</label>
+              <label>タスク名（任意）<input maxLength={100} value={editingTask.title} onChange={(event) => setEditingTask({ ...editingTask, title: event.target.value })} /></label>
               <div className="task-edit-date-field"><span className="task-edit-date-label">締め切り</span><DatePicker value={editingTask.deadline} onChange={(value) => { setEditingTask({ ...editingTask, deadline: value }); if (value) setEditErrors((errors) => ({ ...errors, deadline: false })); }} error={editErrors.deadline} /></div>
               <label>入力した概要<AutoResizeTextarea rows={3} value={editingTask.summary} onChange={(value) => setEditingTask({ ...editingTask, summary: value })} /></label>
               {editingTask.analysisStatus !== "pending" && <>

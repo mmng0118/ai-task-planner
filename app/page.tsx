@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CalendarPanel } from "../components/CalendarPanel";
+import { AccountSettingsPanel } from "../components/AccountSettingsPanel";
 import {
   PlannerSidebar,
   type PlannerScreen,
@@ -334,8 +335,10 @@ export default function Home() {
           onToggleSubtask={toggleSubtask}
           onOpenTaskInList={openTaskInList}
         />
-      ) : (
+      ) : screen === "calendar" ? (
         <CalendarPanel tasks={filteredTasks} query={query} onQueryChange={setQuery} onOpenTaskInList={openTaskInList} />
+      ) : (
+        <AccountSettingsPanel />
       )}
     </main>
   );
