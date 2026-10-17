@@ -29,7 +29,12 @@ export async function proxy(request: NextRequest) {
   // Validate the auth token and keep its cookie refreshed.
   const { data } = await supabase.auth.getClaims();
   const pathname = request.nextUrl.pathname;
-  const isPublicRoute = pathname.startsWith("/login") || pathname.startsWith("/auth/");
+  const isPwaAsset =
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/sw.js" ||
+    pathname === "/offline.html";
+  const isPublicRoute =
+    pathname.startsWith("/login") || pathname.startsWith("/auth/") || isPwaAsset;
 
   if (!data?.claims && !isPublicRoute) {
     if (pathname.startsWith("/api/")) {
