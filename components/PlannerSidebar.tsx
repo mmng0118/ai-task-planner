@@ -13,10 +13,10 @@ export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; 
       </picture>
       <nav className="side-nav" aria-label="メインメニュー">
         <button type="button" className={`nav-item ${screen === "add" ? "active" : ""}`} onClick={() => onNavigate("add")}>
-          <span className="nav-glyph glyph-plus" aria-hidden="true">＋</span><span>タスク登録</span>
+          <span className="nav-glyph glyph-plus" aria-hidden="true">＋</span><span className="nav-label-desktop">タスク登録</span><span className="nav-label-mobile">登録</span>
         </button>
         <button type="button" className={`nav-item ${screen === "list" ? "active" : ""}`} onClick={() => onNavigate("list")}>
-          <span className="nav-glyph glyph-list" aria-hidden="true"><i /><i /><i /></span><span>タスク一覧</span>
+          <span className="nav-glyph glyph-list" aria-hidden="true"><i /><i /><i /></span><span className="nav-label-desktop">タスク一覧</span><span className="nav-label-mobile">タスク</span>
         </button>
         <button type="button" className={`nav-item ${screen === "analyze" ? "active" : ""}`} onClick={() => onNavigate("analyze")}>
           <span className="nav-glyph glyph-bars" aria-hidden="true"><i /><i /><i /></span><span>プラン</span>
@@ -28,6 +28,23 @@ export function PlannerSidebar({ screen, onNavigate }: { screen: PlannerScreen; 
       <button type="button" className={`nav-item settings-nav-item ${screen === "settings" ? "active" : ""}`} onClick={() => onNavigate("settings")}>
         <span className="nav-glyph glyph-settings" aria-hidden="true">⚙</span><span>設定</span>
       </button>
+      <nav className="mobile-tab-bar" aria-label="メインメニュー">
+        <button type="button" aria-label="タスク" className={`nav-item ${screen === "list" ? "active" : ""}`} onClick={() => onNavigate("list")}>
+          <span className="nav-glyph glyph-list" aria-hidden="true"><i /><i /><i /></span><span className="nav-label-mobile">タスク</span>
+        </button>
+        <button type="button" aria-label="プラン" className={`nav-item ${screen === "analyze" ? "active" : ""}`} onClick={() => onNavigate("analyze")}>
+          <span className="nav-glyph glyph-bars" aria-hidden="true"><i /><i /><i /></span><span className="nav-label-mobile">プラン</span>
+        </button>
+        <button type="button" aria-label="登録" className={`nav-item ${screen === "add" ? "active" : ""}`} onClick={() => onNavigate("add")}>
+          <span className="nav-glyph glyph-plus" aria-hidden="true">＋</span><span className="nav-label-mobile">登録</span>
+        </button>
+        <button type="button" aria-label="カレンダー" className={`nav-item ${screen === "calendar" ? "active" : ""}`} onClick={() => onNavigate("calendar")}>
+          <span className="nav-glyph glyph-calendar" aria-hidden="true" /><span className="nav-label-mobile">カレンダー</span>
+        </button>
+        <button type="button" aria-label="設定" className={`nav-item ${screen === "settings" ? "active" : ""}`} onClick={() => onNavigate("settings")}>
+          <span className="nav-glyph glyph-settings" aria-hidden="true">⚙</span><span className="nav-label-mobile">設定</span>
+        </button>
+      </nav>
     </aside>
   );
 }

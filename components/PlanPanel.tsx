@@ -57,7 +57,7 @@ export function PlanPanel({
   return (
     <section className="workspace plan-workspace">
       <div className="plan-surface surface-card">
-      <div className="color-ruler muted-ruler" aria-hidden="true"><i /><i /><i /></div>
+      <div className="color-ruler" aria-hidden="true"><i /><i /><i /></div>
       <div className="plan-heading">
         <div className="plan-heading-copy">
           <h2>おすすめプラン</h2>

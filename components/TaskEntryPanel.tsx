@@ -351,7 +351,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
 
         {view === "list" && (
         <section className="surface-card task-list-card">
-            <div className="color-ruler muted-ruler" aria-hidden="true"><i /><i /><i /></div>
+            <div className="color-ruler" aria-hidden="true"><i /><i /><i /></div>
             <div className="task-list-heading">
               <h2 className="section-title">タスク一覧</h2>
               <span className="task-count-badge" aria-label={`全${totalCount}件`}><span>全</span><strong>{totalCount}</strong><span>件</span></span>

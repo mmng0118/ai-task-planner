@@ -138,6 +138,7 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
   return (
     <section className="workspace calendar-workspace">
       <div className="calendar-surface">
+        <div className="color-ruler" aria-hidden="true"><i /><i /><i /></div>
         <div className="calendar-toolbar">
           <h1 className="section-title" aria-live="polite">
             <button className="calendar-title-picker" type="button" aria-label={`${new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" }).format(shownMonth)}を選択`} aria-haspopup="dialog" aria-expanded={datePickerOpen} onClick={() => setDatePickerOpen(true)}>
