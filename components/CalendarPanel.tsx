@@ -23,6 +23,19 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
   const [draftDeadlineTo, setDraftDeadlineTo] = useState("");
   const [draftMinutesMin, setDraftMinutesMin] = useState(0);
   const [draftMinutesMax, setDraftMinutesMax] = useState(480);
+  const positionTaskTooltip = (taskElement: HTMLSpanElement) => {
+    if (!window.matchMedia("(max-width: 760px)").matches) return;
+    const tooltip = taskElement.nextElementSibling as HTMLElement | null;
+    if (!tooltip) return;
+
+    const rect = taskElement.getBoundingClientRect();
+    const tooltipHeight = Math.min(180, window.innerHeight - 96);
+    const spaceBelow = window.innerHeight - 72 - rect.bottom - 5;
+    const top = spaceBelow >= tooltipHeight
+      ? rect.bottom + 5
+      : Math.max(12, rect.top - tooltipHeight - 5);
+    tooltip.style.setProperty("--calendar-tooltip-top", `${top}px`);
+  };
   const [shownMonth, setShownMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -240,7 +253,7 @@ export function CalendarPanel({ tasks, query, onQueryChange, onOpenTaskInList }:
               <div className="calendar-day-tasks">
                 {cell.tasks.map((task) => (
                   <div className="calendar-task-wrap" key={task.id}>
-                    <span id={`calendar-task-${task.id}`} className={`calendar-task${task.status === "done" ? " is-done" : ""}`} tabIndex={0} aria-describedby={`calendar-task-summary-${task.id}`}>{task.title}</span>
+                    <span id={`calendar-task-${task.id}`} className={`calendar-task${task.status === "done" ? " is-done" : ""}`} tabIndex={0} aria-describedby={`calendar-task-summary-${task.id}`} onFocus={(event) => positionTaskTooltip(event.currentTarget)} onMouseEnter={(event) => positionTaskTooltip(event.currentTarget)}>{task.title}</span>
                     <div className="calendar-task-tooltip" id={`calendar-task-summary-${task.id}`} role="group" aria-label={`${task.title}の概要とリンク`}>
                       <strong className="calendar-task-tooltip-title">{task.title}</strong>
                       <button className="calendar-task-tooltip-link" type="button" onClick={() => onOpenTaskInList(task)}>タスク一覧で開く →</button>

@@ -18,8 +18,8 @@ export async function extractDocxText(file: File): Promise<string> {
     throw new Error("Word文書から文字を取り出せませんでした。");
   }
 
-  if (extractedText.length > 12_000) {
-    throw new Error("Word文書の文字数が多すぎます。12,000文字以内にしてください。");
+  if (extractedText.length > 30_000) {
+    throw new Error("Word文書の文字数が多すぎます。30,000文字以内にしてください。");
   }
 
   return extractedText;

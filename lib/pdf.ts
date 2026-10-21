@@ -17,8 +17,8 @@ export async function extractPdfText(file: File): Promise<string> {
   const pdf = await loadingTask.promise;
 
   try {
-    if (pdf.numPages > 20) {
-      throw new Error("PDFは20ページ以下のファイルを選択してください。");
+    if (pdf.numPages > 50) {
+      throw new Error("PDFは50ページ以下のファイルを選択してください。");
     }
 
     const pages: string[] = [];
@@ -39,8 +39,8 @@ export async function extractPdfText(file: File): Promise<string> {
     }
 
     const extractedText = pages.join("\n");
-    if (extractedText.length > 12_000) {
-      throw new Error("PDFの文字数が多すぎます。12,000文字以内のPDFに分けてください。");
+    if (extractedText.length > 30_000) {
+      throw new Error("PDFの文字数が多すぎます。30,000文字以内のPDFに分けてください。");
     }
 
     return extractedText;
