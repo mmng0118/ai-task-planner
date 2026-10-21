@@ -202,9 +202,12 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .entry-workspace { display: flex; height: 100vh; flex-direction: column; gap: 24px; }
 .entry-columns { display: grid; flex: 1 1 auto; min-height: 440px; grid-template-columns: .96fr 1.04fr; align-items: stretch; gap: 18px; }
 .entry-columns.single-column { grid-template-columns: minmax(0, 1fr); }
+.entry-workspace:not(.task-list-workspace) { height: auto; min-height: 100vh; }
+.entry-workspace:not(.task-list-workspace) .entry-columns { flex: 1 0 auto; min-height: 0; }
+.entry-workspace:not(.task-list-workspace) .entry-card { min-height: calc(100vh - 62px); }
 .surface-card { min-width: 0; border-radius: 16px; background: #fff; }
 .entry-card, .task-list-card { position: relative; height: 100%; min-height: 100%; padding: 40px 29px 24px; }
-.entry-card { display: flex; flex-direction: column; }
+.entry-card { display: flex; height: auto; min-height: 0; flex-direction: column; }
 .color-ruler { position: absolute; top: 12px; right: 13px; left: 13px; display: flex; gap: 3px; height: 6px; }
 .color-ruler i { flex: 1; border-radius: 8px; background: var(--coral); }
 .color-ruler i:nth-child(2) { background: #69a6d5; }
@@ -268,9 +271,10 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .search-field input::placeholder {
   font-family: var(--reference-font-family);
 }
-.coral-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--coral); color: #fff; font-size: 13px; font-weight: 750; transition: transform .15s ease, filter .15s ease; }
+.coral-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--coral); color: #fff; font-size: 13px; font-weight: 750; transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; }
 .coral-button:hover { filter: brightness(.96); transform: translateY(-1px); }
 .submit-button:hover { transform: translateY(-1px) scale(1.05); }
+.submit-button:active:not(:disabled) { filter: brightness(.94); transform: translateY(1px) scale(.985); box-shadow: inset 0 1px 2px rgb(104 48 42 / 16%); }
 .submit-button { width: 116px; flex: 0 0 auto; align-self: center; margin-top: -5px; }
 
 .task-list-card { display: flex; min-height: 0; height: 100%; flex-direction: column; justify-content: flex-start; overflow: hidden; padding: 40px 29px 24px; border: 1px solid #d8d3c9; border-radius: 16px; }
@@ -303,7 +307,8 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .task-analysis-inline.has-error { background: #fff3f0; color: #a84f47; }
 .task-analysis-inline button { flex: 0 0 auto; padding: 4px 9px; border: 1px solid #83a9c2; border-radius: 999px; background: #fff; color: #3479af; font-size: 10px; font-weight: 600; cursor: pointer; }
 .task-analysis-inline button:disabled { opacity: .55; cursor: wait; }
-.submit-button:disabled { opacity: .72; cursor: wait; }
+.submit-button:disabled { opacity: .72; cursor: wait; transform: none; }
+.submit-button.is-analyzing:disabled { background: #f5ada4; opacity: 1; filter: none; box-shadow: none; }
 .task-submit-status { align-self: center; margin: -5px 0 0; color: #5d7180; font-size: 11px; text-align: center; }
 .task-bulk-toolbar { display: flex; min-height: 30px; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .task-selection-count { margin-right: auto; color: #737373; font-size: 11px; }
@@ -633,6 +638,7 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .entry-workspace.task-list-workspace { height: auto; min-height: 100dvh; }
   .entry-columns { flex: 0 0 auto; min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .entry-card { height: auto; min-height: 0; padding: 36px 22px 24px; }
+  .entry-workspace:not(.task-list-workspace) .entry-card { min-height: 0; }
   .task-list-card { height: 100%; min-height: 0; padding: 36px 22px 24px; }
   .task-form { flex: 0 0 auto; justify-content: flex-start; }
   .task-form .task-summary-field { grid-template-rows: auto minmax(180px, 1fr); }

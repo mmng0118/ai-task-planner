@@ -344,7 +344,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
             </div>
             {formErrors.content && <span className="field-error" role="alert">概要を入力するか、PDF・Wordファイルを選択してください</span>}
             {isAnalyzing && <p className="task-submit-status" role="status">AIがタスクを分析しています。完了するとプランに反映されます。</p>}
-            <button className="coral-button submit-button" type="submit" disabled={isReadingFile || isAnalyzing}>{isReadingFile ? "読み取り中…" : isAnalyzing ? "AI分析中…" : "登録する"}</button>
+            <button className={`coral-button submit-button${isAnalyzing ? " is-analyzing" : ""}`} type="submit" disabled={isReadingFile || isAnalyzing}>{isReadingFile ? "読み取り中…" : isAnalyzing ? "AI分析中…" : "登録する"}</button>
           </form>
         </section>
         )}
