@@ -4,8 +4,6 @@ import { estimatedMinutes, type AnalyzeRequest, type AnalyzeResponse } from "../
 
 export const maxDuration = 60;
 
-const ai = new GoogleGenAI({});
-
 const responseSchema = {
   type: "object",
   properties: {
@@ -15,6 +13,7 @@ const responseSchema = {
         type: "object",
         properties: {
           id: { type: "string" },
+          title: { type: "string" },
           analysis: {
             type: "object",
             properties: {
@@ -39,7 +38,7 @@ const responseSchema = {
             required: ["summary", "difficulty", "estimatedHours", "subtasks", "tip"],
           },
         },
-        required: ["id", "analysis"],
+        required: ["id", "title", "analysis"],
       },
     },
   },
@@ -48,12 +47,21 @@ const responseSchema = {
 
 export async function POST(request: Request) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEYまたはGOOGLE_API_KEYが読み込まれていません。.env.localの場所と設定名、開発サーバーの再起動を確認してください。" },
+        { status: 500 },
+      );
+    }
+    const ai = new GoogleGenAI({ apiKey, vertexai: false });
     const body = (await request.json()) as AnalyzeRequest;
 
     const interaction = await ai.interactions.create({
       model: "gemini-3.5-flash-lite",
       input: `学習タスクを分析し、指定されたJSON形式で日本語の結果を返してください。入力に書かれた具体的な内容を残し、曖昧な一般論に置き換えないでください。
 各タスクについて:
+- title: 入力にタイトルがある場合は、文字を変更せずそのまま返す。タイトルが空の場合は、概要や資料の内容から課題の中心が伝わる短い日本語タイトル（目安10〜25字）を作る。入力にない課題内容を推測して追加しない。
 - summary: 入力に書かれた事実を日本語で要約する。目安は100〜180字。課題で何を作る・解く・提出するのか、明記された数・条件・提出形式・評価基準を省かず、読んだ人が作業内容を理解できる長さにする。短い入力は無理に引き延ばさない。推測や助言は混ぜない。
 - difficulty: 課題の内容、入力に明記された作業量、手順の複雑さを1〜5で評価する。締切の近さは難易度に含めない。一般的な学生が取り組む通常規模の課題は星2を基準にする。作業が複数工程に分かれることや「レポート」「試験」などの種類だけでは加点しない。高い星は、入力に具体的な分量・難しい条件・高度な分析などの根拠がある場合に限る。判断に迷ったら低い方を選ぶ。
   1=短時間で終わる単純な確認・提出
@@ -98,13 +106,14 @@ ${JSON.stringify(body.tasks)}`,
     }
 
     const result: AnalyzeResponse = {
-      tasks: parsed.tasks.map(({ id, analysis }) => {
+      tasks: parsed.tasks.map(({ id, title, analysis }) => {
         const totalMinutes = analysis.subtasks.reduce(
           (sum, subtask) => sum + subtask.estimatedMinutes,
           0,
         );
         return {
           id,
+          title,
           analysis: {
             ...analysis,
             estimatedHours: estimatedMinutes(totalMinutes / 60) / 60,
@@ -131,7 +140,7 @@ ${JSON.stringify(body.tasks)}`,
 function isAnalyzeResponse(value: unknown): value is AnalyzeResponse {
   if (!isRecord(value) || !Array.isArray(value.tasks)) return false;
   return value.tasks.every((task) => {
-    if (!isRecord(task) || typeof task.id !== "string" || !isRecord(task.analysis)) return false;
+    if (!isRecord(task) || typeof task.id !== "string" || typeof task.title !== "string" || !task.title.trim() || !isRecord(task.analysis)) return false;
     const analysis = task.analysis;
     return (
       typeof analysis.summary === "string" &&

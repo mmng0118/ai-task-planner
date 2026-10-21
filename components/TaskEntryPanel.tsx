@@ -389,9 +389,10 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
                   </span>}
                 </button>
                 {!isSelectingTasks && <div className="task-actions">
-                  {!editingTask && <button className="task-edit" type="button" onClick={() => beginEdit(task)}>
+                  {!editingTask && <button className="task-edit" type="button" aria-label="タスクを編集する" onClick={() => beginEdit(task)}>
                     <span aria-hidden="true">✎</span>
-                    <span>タスクを編集する</span>
+                    <span className="task-edit-label-desktop" aria-hidden="true">タスクを編集する</span>
+                    <span className="task-edit-label-mobile" aria-hidden="true">編集</span>
                   </button>}
                 </div>}
                 </div>

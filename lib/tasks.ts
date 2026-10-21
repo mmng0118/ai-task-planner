@@ -39,6 +39,7 @@ export type AnalyzeRequest = {
 export type AnalyzeResponse = {
   tasks: Array<{
     id: string;
+    title: string;
     analysis: TaskAnalysis;
   }>;
 };

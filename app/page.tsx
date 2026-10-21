@@ -279,6 +279,7 @@ export default function Home() {
         return resultForTask
           ? {
               ...task,
+              title: task.title.trim() ? task.title : resultForTask.title,
               analysis: resultForTask.analysis,
               analysisStatus: "complete" as const,
               analysisError: undefined,
