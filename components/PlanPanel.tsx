@@ -24,6 +24,7 @@ export function PlanPanel({
   const [activePlanRow, setActivePlanRow] = useState<ActivePlanRow | null>(null);
   const [planView, setPlanView] = useState<"todo" | "done">("todo");
   const plan = buildSubtaskPlan(tasks);
+  const nextStep = plan[0];
   const completedPlan = tasks.flatMap((task) =>
     task.status === "todo" && task.analysisStatus === "complete"
       ? task.analysis.subtasks.flatMap((subtask, subtaskIndex) =>
@@ -43,6 +44,17 @@ export function PlanPanel({
       return { rowId, taskId, view: "summary" };
     });
   };
+  const openNextStepInPlan = () => {
+    if (!nextStep) return;
+    const rowId = `${nextStep.task.id}-${nextStep.subtaskIndex}`;
+    setActivePlanRow({ rowId, taskId: nextStep.task.id, view: "summary" });
+    const elementId = `plan-row-${rowId}`;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(elementId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  };
   const hasCompletedSteps = tasks.some((task) =>
     task.status === "todo" &&
     task.analysisStatus === "complete" &&
@@ -60,6 +72,28 @@ export function PlanPanel({
       <div className="plan-heading">
         <div className="plan-heading-copy">
           <h2>おすすめプラン</h2>
+          {planView === "todo" && nextStep && (
+            <section className="plan-next-step" aria-label="まずはここから">
+              <div className="plan-next-step-heading">
+                <span>まずはここから</span>
+              </div>
+              <p className="plan-next-step-task">{nextStep.task.title}</p>
+              <h3>{nextStep.subtask.title}</h3>
+              <p className="plan-next-step-description">{nextStep.subtask.description || "この作業から始めましょう。"}</p>
+              <div className="plan-next-step-footer">
+                <div className="plan-next-step-meta">
+                  <span><i className="fact-deadline" aria-hidden="true" />{formatShortDate(nextStep.task.deadline)}</span>
+                  <span><i className="fact-clock" aria-hidden="true">◷</i>{formatDurationMinutes(nextStep.subtask.estimatedMinutes)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={openNextStepInPlan}
+                >
+                  作業の詳細を見る ↓
+                </button>
+              </div>
+            </section>
+          )}
           <div className="task-list-tabs plan-subtask-tabs" role="group" aria-label="サブタスクの状態">
             <button className={`task-list-tab${planView === "todo" ? " is-active" : ""}`} type="button" aria-pressed={planView === "todo"} onClick={() => setPlanView("todo")}>未完了 <span>{plan.length}</span></button>
             <button className={`task-list-tab${planView === "done" ? " is-active" : ""}`} type="button" aria-pressed={planView === "done"} onClick={() => setPlanView("done")}>完了済み <span>{completedPlan.length}</span></button>
@@ -102,6 +136,7 @@ export function PlanPanel({
           return (
             <article
               key={rowId}
+              id={`plan-row-${rowId}`}
               className={`subtask-priority-row${isRelated ? " is-related" : ""}${isUnrelated ? " is-unrelated" : ""}${isFocused ? " is-focused" : ""}${summaryOpen ? " is-expanded" : ""}${isCompleted ? " is-completed" : ""}`}
               onClick={(event) => {
                 if (

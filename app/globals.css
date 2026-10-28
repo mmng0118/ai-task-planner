@@ -375,6 +375,21 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .plan-heading-copy { display: grid; width: 100%; justify-items: start; gap: 4px; }
 .plan-heading h2 { flex: 0 1 auto; margin: 0; color: var(--gold); font-size: 20px; font-weight: 700; text-align: left; }
 .plan-heading-copy p { margin: 0; color: #85817a; font-size: 11px; text-align: left; }
+.plan-next-step { width: 100%; margin-top: 8px; padding: 22px 24px; border: 2px solid #0878ff; border-radius: 14px; background: #fff; }
+.plan-next-step-heading, .plan-next-step-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.plan-next-step-heading > span { color: var(--blue); font-size: 14px; font-weight: 800; }
+.plan-heading-copy .plan-next-step-task { margin-top: 13px; color: #85817a; font-size: 12px; font-weight: 600; }
+.plan-next-step h3 { margin: 4px 0 7px; color: var(--gold); font-size: 22px; font-weight: 700; line-height: 1.4; }
+.plan-heading-copy .plan-next-step-description { color: #625e57; font-size: 14px; line-height: 1.6; }
+.plan-next-step-footer { margin-top: 15px; color: #85817a; font-size: 12px; }
+.plan-next-step-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.plan-next-step-meta > span { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.plan-next-step-meta .fact-clock { font-size: 17px; font-weight: 800; -webkit-text-stroke: .65px currentColor; }
+.plan-next-step-meta .fact-deadline { width: 14px; height: 14px; flex-basis: 14px; }
+.plan-next-step-footer button { flex: 0 0 auto; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--blue); color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .15s ease, transform .12s ease; }
+.plan-next-step-footer button:hover { background: var(--blue-dark); }
+.plan-next-step-footer button:active { transform: translateY(1px); }
+.plan-next-step-footer button:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 .plan-heading-dots { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
 .plan-heading-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--coral); }
 .plan-heading-dots i:nth-child(2) { background: var(--yellow); }
@@ -586,8 +601,8 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 90px; column-gap: 6px; padding: 8px 16px; }
   .subtask-priority-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; padding-left: 0; }
   .subtask-priority-heading-row { gap: 7px; }
-  .subtask-priority-progress-position { flex-direction: row; justify-content: center; gap: 4px; }
-  .subtask-priority-progress-label { font-size: 9px; }
+  .subtask-priority-progress-position { flex-direction: column; justify-content: center; gap: 3px; padding-top: 4px; }
+  .subtask-priority-progress-label { display: none; }
   .subtask-progress { width: 52px; height: 52px; }
   .subtask-progress-count { font-size: 12px; }
   .subtask-priority-title { font-size: 15px; }
@@ -653,6 +668,13 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .plan-workspace { padding: 20px 15px calc(88px + env(safe-area-inset-bottom)); }
   .plan-surface { padding: 36px 22px 24px; border-radius: 14px; }
   .plan-heading { gap: 9px; margin: 0 0 14px; }
+  .plan-next-step { padding: 18px 20px; }
+  .plan-next-step-heading > span { font-size: 13px; }
+  .plan-next-step h3 { font-size: 18px; }
+  .plan-heading-copy .plan-next-step-description { font-size: 13px; }
+  .plan-next-step-footer { align-items: flex-end; flex-direction: column; gap: 10px; font-size: 11px; }
+  .plan-next-step-meta { align-self: flex-start; }
+  .plan-next-step-footer button { min-height: 36px; }
   .plan-heading-dots { gap: 3px; }
   .plan-heading-dots i { width: 7px; height: 7px; }
   .plan-heading h2 { font-size: 20px; }
@@ -663,8 +685,8 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .subtask-priority-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; padding-left: 0; }
   .subtask-priority-expanded-content { padding-left: 0; }
   .subtask-priority-heading-row { gap: 7px; }
-  .subtask-priority-progress-position { flex-direction: row; justify-content: center; gap: 4px; }
-  .subtask-priority-progress-label { font-size: 9px; }
+  .subtask-priority-progress-position { flex-direction: column; justify-content: center; gap: 3px; padding-top: 4px; }
+  .subtask-priority-progress-label { display: none; }
   .subtask-progress { width: 52px; height: 52px; }
   .subtask-progress-count { font-size: 12px; }
   .subtask-priority-title { font-size: 15px; }
