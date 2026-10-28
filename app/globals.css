@@ -303,8 +303,9 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .task-list-entry { align-self: start; }
 .task-analysis-chip { flex: 0 0 auto; padding: 3px 8px; border-radius: 999px; background: #edf4f8; color: #3479af; font-size: 10px; font-weight: 650; white-space: nowrap; }
 .task-analysis-chip.has-error { background: #fff0ed; color: #c95349; }
-.task-analysis-inline { display: flex; flex: 0 0 100%; align-items: center; justify-content: space-between; gap: 10px; margin: 0 3px 7px; padding: 9px 12px; border-radius: 8px; background: #edf4f8; color: #5d7180; font-size: 11px; }
+.task-analysis-inline { display: flex; flex: 0 0 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; min-width: 0; margin: 0 3px 7px; padding: 9px 12px; border-radius: 8px; background: #edf4f8; color: #5d7180; font-size: 11px; }
 .task-analysis-inline.has-error { background: #fff3f0; color: #a84f47; }
+.task-analysis-inline > span { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
 .task-analysis-inline button { flex: 0 0 auto; padding: 4px 9px; border: 1px solid #83a9c2; border-radius: 999px; background: #fff; color: #3479af; font-size: 10px; font-weight: 600; cursor: pointer; }
 .task-analysis-inline button:disabled { opacity: .55; cursor: wait; }
 .submit-button:disabled { opacity: .72; cursor: wait; transform: none; }
@@ -382,30 +383,31 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .subtask-priority-list { display: grid; align-content: start; gap: 12px; container: plan-list / inline-size; }
 .plan-subtask-tabs { width: 100%; margin: 8px 0 0; border-bottom: 1px solid #e5e0d5; }
 .plan-subtask-tabs .task-list-tab { min-height: 28px; margin-bottom: 3px; padding-right: 10px; padding-left: 10px; }
-.subtask-priority-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 80px; align-items: center; column-gap: 8px; row-gap: 6px; min-height: 86px; padding: 15px 30px; border: 1px solid #bdbbb8; border-radius: 14px; background: #fff; cursor: pointer; transition: margin .18s ease, background .15s ease, box-shadow .18s ease; }
+.subtask-priority-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 108px; align-items: center; column-gap: 8px; row-gap: 4px; min-height: 70px; padding: 18px 24px; border: 1px solid #bdbbb8; border-radius: 14px; background: #fff; cursor: pointer; transition: background .15s ease, box-shadow .18s ease; }
 .subtask-priority-row:hover,
 .subtask-priority-row.is-related:hover { box-shadow: inset 0 0 0 2px #0878ff; }
-.subtask-priority-row.is-related { width: 100%; background: #fff; }
-.subtask-priority-row.is-unrelated { width: calc(100% - 48px); margin-left: 48px; }
+.subtask-priority-row.is-expanded { row-gap: 12px; padding: 18px 24px 18px; }
+.subtask-priority-row.is-related,
+.subtask-priority-row.is-unrelated { width: 100%; margin-left: 0; background: #fff; }
 .subtask-priority-checkbox { grid-row: 1; align-self: center; margin: 0; }
 .subtask-checkbox.subtask-priority-checkbox,
 .subtask-checkbox.subtask-priority-checkbox:checked { background: #fff; }
 .subtask-checkbox.subtask-priority-checkbox:hover,
 .subtask-checkbox.subtask-priority-checkbox:checked:hover { background: rgb(123 182 75 / 22%); }
 .subtask-checkbox.subtask-priority-checkbox:checked::after { content: none; }
-.subtask-priority-main { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; align-content: center; align-items: center; justify-content: start; min-width: 0; gap: 5px 20px; }
+.subtask-priority-main { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; align-items: center; justify-content: start; min-width: 0; gap: 3px 16px; }
 .subtask-priority-heading-row { grid-column: 1; grid-row: 1; display: flex; min-width: 0; align-items: center; gap: 10px; }
-.subtask-priority-task { display: block; justify-self: start; overflow: hidden; max-width: 100%; padding: 0; border: 0; background: transparent; color: #858585; font-size: 11px; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.subtask-priority-task { display: block; justify-self: start; overflow: hidden; max-width: 100%; padding: 0; border: 0; background: transparent; color: #858585; font-size: 11px; font-weight: 550; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .subtask-priority-heading-row .subtask-priority-task { min-width: 0; flex: 0 1 auto; }
-.subtask-priority-progress-position { grid-column: 3; grid-row: 1; display: flex; flex-direction: column; min-width: 0; align-self: center; justify-self: end; align-items: center; justify-content: center; gap: 6px; }
-.subtask-priority-progress-label { color: #8e887e; font-size: 10px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
-.subtask-progress { position: relative; display: grid; width: 72px; height: 72px; place-items: center; margin: 0; border-radius: 50%; }
+.subtask-priority-progress-position { grid-column: 3; grid-row: 1; display: flex; flex-direction: row; min-width: 0; align-self: center; justify-self: end; align-items: center; justify-content: center; gap: 5px; }
+.subtask-priority-progress-label { color: #8e887e; font-size: 10px; font-weight: 650; line-height: 1.2; white-space: nowrap; }
+.subtask-progress { position: relative; display: grid; width: 58px; height: 58px; place-items: center; margin: 0; border-radius: 50%; }
 .subtask-progress-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .subtask-progress-segment { fill: none; stroke: rgb(37 180 158 / 28%); stroke-width: 9; stroke-linecap: round; transition: stroke .2s ease; }
 .subtask-progress-segment.is-complete { stroke: #25b49e; }
-.subtask-progress-count { position: relative; z-index: 1; color: #4fa9ad; font-size: 17px; font-weight: 700; line-height: 1; }
+.subtask-progress-count { position: relative; z-index: 1; color: #4fa9ad; font-size: 15px; font-weight: 700; line-height: 1; }
 .subtask-priority-task-label { cursor: default; }
-.subtask-priority-title-row { grid-column: 1; grid-row: 2; display: flex; min-width: 0; align-items: center; gap: 12px; }
+.subtask-priority-title-row { grid-column: 1; grid-row: 2; display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 6px 9px; }
 .subtask-priority-title { min-width: 0; flex: 0 1 auto; color: #9b7e3e; font-size: 16px; font-weight: 600; line-height: 1.5; transition: color .15s ease; }
 .subtask-priority-row.is-completed .subtask-priority-title { color: #aaa; text-decoration: line-through; }
 .subtask-priority-row:not(.is-completed):hover .subtask-priority-title { color: #1688e8; }
@@ -418,8 +420,8 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 .subtask-priority-detail-meta { grid-column: auto; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 22px; margin-top: 6px; padding: 10px 0 2px; border-top: 1px solid #d3d0ca; color: #858585; font-size: 12px; }
 .subtask-priority-meta-item { display: grid; gap: 4px; }
 .subtask-priority-meta-item > small { color: #8e887e; font-size: 10px; line-height: 1.2; }
-.subtask-priority-deadline { grid-column: 1; grid-row: 3; display: inline-flex; align-self: center; justify-self: start; align-items: center; gap: 6px; margin-left: 0; white-space: nowrap; }
-.subtask-priority-row .days-badge { min-height: 22px; padding: 1px 9px; font-size: 11px; }
+.subtask-priority-deadline { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
+.subtask-priority-row .days-badge { min-height: 20px; padding: 1px 8px; font-size: 10px; }
 .subtask-priority-date { display: inline-flex; align-items: center; gap: 6px; color: #858585; font-weight: 500; white-space: nowrap; }
 .subtask-priority-time { display: inline-flex; align-items: center; gap: 5px; font-weight: 500; white-space: nowrap; }
 .subtask-priority-time i { color: var(--gold); font-size: 18px; font-style: normal; font-weight: 800; line-height: 1; -webkit-text-stroke: .35px currentColor; }
@@ -565,14 +567,14 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 }
 
 @media (min-width: 761px) {
-  .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 80px; }
+  .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 108px; }
   .subtask-priority-main { padding-left: 20px; }
   .subtask-priority-checkbox { width: 26px; height: 26px; flex-basis: 26px; font-size: 20px; }
   .plan-heading h2 { font-size: 20px; font-weight: 700; }
   .subtask-priority-task { font-size: 12px; }
   .subtask-priority-title { font-size: 18px; }
-  .subtask-priority-progress-label { font-size: 12px; }
-  .subtask-progress-count { font-size: 19px; }
+  .subtask-priority-progress-label { font-size: 11px; }
+  .subtask-progress-count { font-size: 17px; }
   .subtask-priority-detail { font-size: 14px; }
   .subtask-priority-detail-meta { font-size: 14px; }
   .subtask-priority-meta-item > small { font-size: 12px; }
@@ -581,15 +583,15 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
 }
 
 @container plan-list (max-width: 520px) {
-  .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 68px; column-gap: 6px; padding: 14px 16px; }
-  .subtask-priority-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; padding-left: 0; }
+  .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 90px; column-gap: 6px; padding: 8px 16px; }
+  .subtask-priority-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; padding-left: 0; }
   .subtask-priority-heading-row { gap: 7px; }
-  .subtask-priority-progress-position { flex-direction: column; justify-content: center; gap: 4px; }
-  .subtask-progress { width: 58px; height: 58px; }
-  .subtask-progress-count { font-size: 14px; }
+  .subtask-priority-progress-position { flex-direction: row; justify-content: center; gap: 4px; }
+  .subtask-priority-progress-label { font-size: 9px; }
+  .subtask-progress { width: 52px; height: 52px; }
+  .subtask-progress-count { font-size: 12px; }
   .subtask-priority-title { font-size: 15px; }
   .subtask-priority-title-row { align-items: flex-start; gap: 8px; }
-  .subtask-priority-deadline { grid-column: 1; grid-row: 3; justify-self: start; margin-left: 0; }
 }
 
 @media (max-width: 760px) {
@@ -656,17 +658,17 @@ body::-webkit-scrollbar-thumb:hover { background: #b9b1a3; background-clip: padd
   .plan-heading h2 { font-size: 20px; }
   .subtask-checkbox { width: 19px; height: 19px; flex-basis: 19px; }
   .subtask-checkbox:checked::after { width: 5px; height: 8px; }
-  .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 68px; column-gap: 6px; row-gap: 6px; padding: 14px 16px; }
-  .subtask-priority-row.is-unrelated { width: calc(100% - 24px); margin-left: 24px; }
-  .subtask-priority-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; padding-left: 0; }
+  .subtask-priority-row { grid-template-columns: 32px minmax(0, 1fr) 90px; column-gap: 6px; row-gap: 4px; padding: 8px 16px; }
+  .subtask-priority-row.is-expanded { row-gap: 10px; padding: 14px 16px 22px; }
+  .subtask-priority-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; padding-left: 0; }
   .subtask-priority-expanded-content { padding-left: 0; }
   .subtask-priority-heading-row { gap: 7px; }
-  .subtask-priority-progress-position { flex-direction: column; justify-content: center; gap: 4px; }
-  .subtask-progress { width: 58px; height: 58px; }
-  .subtask-progress-count { font-size: 14px; }
+  .subtask-priority-progress-position { flex-direction: row; justify-content: center; gap: 4px; }
+  .subtask-priority-progress-label { font-size: 9px; }
+  .subtask-progress { width: 52px; height: 52px; }
+  .subtask-progress-count { font-size: 12px; }
   .subtask-priority-title { font-size: 15px; }
   .subtask-priority-title-row { align-items: flex-start; gap: 8px; }
-  .subtask-priority-deadline { grid-column: 1; grid-row: 3; justify-self: start; margin-left: 0; }
   .priority-row { min-height: 105px; padding-bottom: 16px; }
   .priority-card { grid-template-columns: 48px minmax(0, 1fr); gap: 7px; min-height: 95px; padding: 14px 32px 12px 12px; }
   .priority-card.is-expanded { padding: 14px 32px 32px 12px; }

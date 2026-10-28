@@ -39,9 +39,8 @@ export function PlanPanel({
   ) ? activePlanRow : null;
   const activatePlanRow = (rowId: string, taskId: string) => {
     setActivePlanRow((current) => {
-      if (current?.rowId !== rowId) return { rowId, taskId, view: "related" };
-      if (current.view === "related") return { ...current, view: "summary" };
-      return null;
+      if (current?.rowId === rowId && current.view === "summary") return null;
+      return { rowId, taskId, view: "summary" };
     });
   };
   const hasCompletedSteps = tasks.some((task) =>
@@ -132,23 +131,23 @@ export function PlanPanel({
                     }}
                     aria-expanded={summaryOpen}
                     aria-pressed={isFocused}
-                    aria-label={`${task.title}。${isFocused ? (summaryOpen ? "関連表示を閉じる" : "概要を見る") : "関連する作業を表示"}`}
+                    aria-label={`${task.title}。${summaryOpen ? "詳細を閉じる" : "詳細を開く"}`}
                   >
-                    {task.title} &gt;&gt;
+                    {task.title}
                   </button>
                 </div>
                 <div className="subtask-priority-title-row">
                   <strong className="subtask-priority-title">
                     {subtask.title}
                   </strong>
+                  <span className="days-badge subtask-priority-deadline">
+                    {days < 0
+                      ? "期限超過"
+                      : days === 0
+                        ? "今日まで"
+                        : `あと${days}日`}
+                  </span>
                 </div>
-                <span className="days-badge subtask-priority-deadline">
-                  {days < 0
-                    ? "期限超過"
-                    : days === 0
-                      ? "今日まで"
-                      : `あと${days}日`}
-                </span>
               </div>
               <div className="subtask-priority-progress-position">
                 <span className="subtask-priority-progress-label">進捗度</span>

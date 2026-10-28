@@ -334,7 +334,7 @@ export function TaskEntryPanel({ view, tasks, totalCount, query, onQueryChange, 
             <label className="task-summary-field">概要<AutoResizeTextarea rows={4} value={summary} onChange={(value) => { setSummary(value); if (value.trim() || attachmentText.trim()) setFormErrors((errors) => ({ ...errors, content: false })); }} placeholder="概要を入力または資料をアップロードしてください" /></label>
             <div className="document-attach-control">
               <input id="task-document" className="document-upload-input" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleDocumentChange} />
-              <label className="document-attach-button" htmlFor="task-document"><span aria-hidden="true">↥</span> PDF・Wordを選択</label>
+              <label className="document-attach-button" htmlFor="task-document">PDF・Wordを選択</label>
               {(isReadingFile || attachmentFileName) && <div className="document-attach-result">
                 {isReadingFile && <span className="document-attach-status" role="status">ファイルを読み取り中…</span>}
                 {attachmentFileName && !isReadingFile && <span className="document-attach-status" role="status">{attachmentFileName}（{attachmentText.length.toLocaleString("ja-JP")}文字）</span>}
