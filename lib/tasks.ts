@@ -49,7 +49,9 @@ export function createPlaceholderAnalysis(summary: string): TaskAnalysis {
   const words = summary.trim().split(/\s+/).filter(Boolean).length;
   const difficulty = Math.min(5, Math.max(2, Math.ceil(words / 12) + 1));
   const estimatedHours = Math.max(2, Math.round(words / 8));
-  const placeholderMinutes = Math.max(10, Math.round((estimatedHours * 60) / 3));
+  // The task API accepts at most 360 minutes per subtask. Keep the temporary
+  // estimate valid while a document-backed task waits for AI analysis.
+  const placeholderMinutes = Math.min(360, Math.max(10, Math.round((estimatedHours * 60) / 3)));
   return {
     summary: summary.trim() || "概要は登録されていません。",
     difficulty,

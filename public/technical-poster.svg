@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="594mm" height="841mm" viewBox="0 0 1200 1697">
+<rect width="1200" height="1697" fill="#fff"/>
+<g font-family="Arial,'Yu Gothic',Meiryo,sans-serif" fill="#202a33">
+<!-- Header -->
+<text x="80" y="88" font-size="21" font-weight="700" letter-spacing="2" fill="#506b7e">学祭展示｜技術解説</text>
+<text x="80" y="158" font-size="58" font-weight="700">AI Task Planner</text>
+<text x="80" y="195" font-size="21" fill="#46525c">複数の課題を整理し、AI分析と優先順位づけで取り組む順番を決めるタスク管理アプリです。</text>`r`n<line x1="80" y1="220" x2="1120" y2="220" stroke="#506b7e" stroke-width="4"/>
+<!-- central dividers -->
+<line x1="600" y1="230" x2="600" y2="1617" stroke="#aebbc3" stroke-width="2"/>
+<line x1="80" y1="920" x2="1120" y2="920" stroke="#aebbc3" stroke-width="2"/>
+<!-- TOP LEFT: API -->
+<text x="80" y="270" font-size="23" font-weight="700" fill="#506b7e">01　API とは</text>
+<text x="80" y="320" font-size="27" font-weight="700">ソフトウェア同士の「窓口」</text>
+<text x="80" y="361" font-size="21" fill="#46525c">決められたルールでデータをやり取りする</text>
+<text x="80" y="393" font-size="21" fill="#46525c">仕組みです。依頼を送ると、相手のサービス</text>
+<text x="80" y="425" font-size="21" fill="#46525c">から結果が返ってきます。</text>
+<text x="80" y="480" font-size="23" font-weight="700">このアプリでの流れ</text>
+<!-- vertical flow -->
+<line x1="106" y1="530" x2="106" y2="700" stroke="#c3cdd2" stroke-width="3"/>
+<g fill="#506b7e"><circle cx="106" cy="535" r="17"/><circle cx="106" cy="590" r="17"/><circle cx="106" cy="645" r="17"/><circle cx="106" cy="700" r="17"/></g>
+<g fill="#fff" font-size="16" text-anchor="middle" font-weight="700"><text x="106" y="541">1</text><text x="106" y="596">2</text><text x="106" y="651">3</text><text x="106" y="706">4</text></g>
+<text x="140" y="542" font-size="22" font-weight="700">アプリが課題文を送る</text>
+<text x="140" y="570" font-size="18" fill="#59656e">POST /api/analyze</text>
+<text x="140" y="597" font-size="22" font-weight="700">Next.js サーバーが中継</text>
+<text x="140" y="625" font-size="18" fill="#59656e">APIキーを使って Gemini に接続</text>
+<text x="140" y="652" font-size="22" font-weight="700">Gemini API が分析</text>
+<text x="140" y="680" font-size="18" fill="#59656e">課題文を送信し、結果を受け取る</text>
+<text x="140" y="707" font-size="22" font-weight="700">分析結果をアプリに返す</text>
+<text x="80" y="773" font-size="20" fill="#46525c">APIキーはサーバー側で管理し、ブラウザには</text>
+<text x="80" y="805" font-size="20" fill="#46525c">出しません。Geminiの結果は JSON で受け取ります。</text>
+<!-- TOP RIGHT: AI -->
+<text x="650" y="270" font-size="23" font-weight="700" fill="#506b7e">03　Gemini AI の役割</text>
+<text x="650" y="320" font-size="26" font-weight="700">課題文の意味を読み取り、作業に分ける</text>
+<text x="650" y="361" font-size="20" fill="#46525c">使用モデル：gemini-3.5-flash-lite</text>
+<text x="650" y="414" font-size="22" font-weight="700">AIが作る情報</text>
+<circle cx="661" cy="455" r="4" fill="#506b7e"/><text x="678" y="462" font-size="21" fill="#46525c">課題の事実に沿った日本語要約</text>
+<circle cx="661" cy="499" r="4" fill="#506b7e"/><text x="678" y="506" font-size="21" fill="#46525c">難易度・所要時間の推定</text>
+<circle cx="661" cy="543" r="4" fill="#506b7e"/><text x="678" y="550" font-size="21" fill="#46525c">順番つきサブタスクと説明</text>
+<circle cx="661" cy="587" r="4" fill="#506b7e"/><text x="678" y="594" font-size="21" fill="#46525c">取り組みのヒント</text>
+<text x="650" y="650" font-size="20" fill="#59656e">タスク名が空なら内容から提案し、入力済み</text>
+<text x="650" y="681" font-size="20" fill="#59656e">ならその名前を維持。返答 JSON はアプリで</text>
+<text x="650" y="712" font-size="20" fill="#59656e">形式を検証します。</text>
+<text x="650" y="773" font-size="20" fill="#46525c">課題文は分析のため Google Gemini API に送信。</text>
+<text x="650" y="805" font-size="20" fill="#46525c">分析結果は Supabase に保存されます。</text>
+<!-- BOTTOM LEFT: extraction -->
+<text x="80" y="984" font-size="23" font-weight="700" fill="#506b7e">02　資料から文字を取り出す</text>
+<text x="80" y="1026" font-size="20" fill="#46525c">JavaScript のライブラリを使い、ブラウザ内で</text>
+<text x="80" y="1056" font-size="20" fill="#46525c">ファイルから文字情報を抽出します。</text>
+<text x="80" y="1120" font-size="25" font-weight="700">PDF　｜　PDF.js</text>
+<text x="80" y="1158" font-size="21" fill="#46525c">PDFに含まれる文字をページごとに抽出。</text>
+<text x="80" y="1194" font-size="20" fill="#59656e">上限：10 MB・50ページ・30,000文字</text>
+<text x="80" y="1241" font-size="21" font-weight="700">スキャン画像だけのPDFは読めません。</text>
+<text x="80" y="1274" font-size="19" fill="#59656e">OCR（画像の文字認識）は未対応。</text>
+<line x1="80" y1="1312" x2="560" y2="1312" stroke="#d6dde1" stroke-width="2"/>
+<text x="80" y="1360" font-size="25" font-weight="700">Word　｜　Mammoth</text>
+<text x="80" y="1398" font-size="21" fill="#46525c">.docx の本文テキストを抽出。</text>
+<text x="80" y="1434" font-size="20" fill="#59656e">上限：10 MB・30,000文字</text>
+<text x="80" y="1472" font-size="20" fill="#59656e">旧形式 .doc と画像ファイルの直接解析は</text>
+<text x="80" y="1502" font-size="20" fill="#59656e">未対応です。</text>
+<!-- BOTTOM RIGHT: priority -->
+<text x="650" y="984" font-size="23" font-weight="700" fill="#506b7e">04　優先順位の決め方</text>
+<text x="650" y="1032" font-size="26" font-weight="700">優先順位は AI ではなく、</text>
+<text x="650" y="1068" font-size="26" font-weight="700">アプリ内の計算で決めます。</text>
+<text x="650" y="1123" font-size="21" fill="#46525c">考慮する情報</text>
+<circle cx="661" cy="1160" r="4" fill="#506b7e"/><text x="678" y="1167" font-size="21" fill="#46525c">締切までの日数と残り作業量</text>
+<circle cx="661" cy="1201" r="4" fill="#506b7e"/><text x="678" y="1208" font-size="21" fill="#46525c">難易度と所要時間</text>
+<circle cx="661" cy="1242" r="4" fill="#506b7e"/><text x="678" y="1249" font-size="21" fill="#46525c">作業の前後関係</text>
+<text x="650" y="1305" font-size="20" fill="#59656e">急ぎの課題を優先しつつ、複数の課題を</text>
+<text x="650" y="1336" font-size="20" fill="#59656e">交互に進めやすい順に並べます。</text>
+<text x="650" y="1391" font-size="20" font-weight="700" fill="#506b7e">作業完了・タスク更新のあとに再計算</text>
+<text x="650" y="1426" font-size="19" fill="#59656e">この再計算では Gemini API を呼びません。</text>
+<line x1="650" y1="1462" x2="1120" y2="1462" stroke="#d6dde1" stroke-width="2"/>
+<text x="650" y="1508" font-size="20" font-weight="700">使用技術</text>
+<text x="650" y="1544" font-size="19" fill="#46525c">Next.js / React / TypeScript</text>
+<text x="650" y="1576" font-size="19" fill="#46525c">Gemini API / PDF.js / Mammoth / Supabase</text>
+</g>
+</svg>
+
