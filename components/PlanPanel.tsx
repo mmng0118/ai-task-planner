@@ -68,37 +68,33 @@ export function PlanPanel({
   return (
     <section className="workspace plan-workspace">
       <div className="plan-surface surface-card">
-      <div className="color-ruler" aria-hidden="true"><i /><i /><i /></div>
-      <div className="plan-heading">
-        <div className="plan-heading-copy">
-          <h2>おすすめプラン</h2>
-          {planView === "todo" && nextStep && (
-            <section className="plan-next-step" aria-label="まずはここから">
-              <div className="plan-next-step-heading">
-                <span>まずはここから</span>
-              </div>
-              <p className="plan-next-step-task">{nextStep.task.title}</p>
-              <h3>{nextStep.subtask.title}</h3>
-              <p className="plan-next-step-description">{nextStep.subtask.description || "この作業から始めましょう。"}</p>
-              <div className="plan-next-step-footer">
-                <div className="plan-next-step-meta">
-                  <span><i className="fact-deadline" aria-hidden="true" />{formatShortDate(nextStep.task.deadline)}</span>
-                  <span><i className="fact-clock" aria-hidden="true">◷</i>{formatDurationMinutes(nextStep.subtask.estimatedMinutes)}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={openNextStepInPlan}
-                >
-                  作業の詳細を見る ↓
-                </button>
-              </div>
-            </section>
-          )}
-          <div className="task-list-tabs plan-subtask-tabs" role="group" aria-label="サブタスクの状態">
-            <button className={`task-list-tab${planView === "todo" ? " is-active" : ""}`} type="button" aria-pressed={planView === "todo"} onClick={() => setPlanView("todo")}>未完了 <span>{plan.length}</span></button>
-            <button className={`task-list-tab${planView === "done" ? " is-active" : ""}`} type="button" aria-pressed={planView === "done"} onClick={() => setPlanView("done")}>完了済み <span>{completedPlan.length}</span></button>
-          </div>
-        </div>
+      <div className="plan-pickup-header">
+        <h2 className="plan-title">おすすめプラン</h2>
+        {planView === "todo" && nextStep && (
+          <section className="plan-next-step" aria-label="まずはここから">
+            <div className="plan-next-step-card">
+              <span className="plan-next-step-kicker">
+                まずはこれから
+                <span className="plan-next-step-days">
+                  {daysUntil(nextStep.task.deadline) < 0
+                    ? "期限超過"
+                    : daysUntil(nextStep.task.deadline) === 0
+                      ? "今日まで"
+                      : `あと${daysUntil(nextStep.task.deadline)}日`}
+                </span>
+              </span>
+              <h3><span className="plan-next-step-marker" aria-hidden="true">▶</span>{nextStep.subtask.title}</h3>
+              <button type="button" onClick={openNextStepInPlan}>タスクの概要を見る <span aria-hidden="true">→</span></button>
+            </div>
+          </section>
+        )}
+      </div>
+      <div className="plan-tab-divider" aria-hidden="true">
+        <div className="color-ruler"><i /><i /><i /></div>
+      </div>
+      <div className="task-list-tabs plan-subtask-tabs" role="group" aria-label="サブタスクの状態">
+        <button className={`task-list-tab${planView === "todo" ? " is-active" : ""}`} type="button" aria-pressed={planView === "todo"} onClick={() => setPlanView("todo")}>未完了 <span>{plan.length}</span></button>
+        <button className={`task-list-tab${planView === "done" ? " is-active" : ""}`} type="button" aria-pressed={planView === "done"} onClick={() => setPlanView("done")}>完了済み <span>{completedPlan.length}</span></button>
       </div>
 
       <section className="priority-timeline subtask-priority-list" aria-label="サブタスクの優先順位">
