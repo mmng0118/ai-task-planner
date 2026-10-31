@@ -1,78 +1,111 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="594mm" height="841mm" viewBox="0 0 1200 1697">
-<rect width="1200" height="1697" fill="#fff"/>
-<g font-family="Arial,'Yu Gothic',Meiryo,sans-serif" fill="#202a33">
+<rect width="1200" height="1697" fill="#FFFFFF"/>
+<g font-family="Arial,'Yu Gothic',Meiryo,sans-serif" fill="#202020">
 <!-- Header -->
-<text x="80" y="88" font-size="21" font-weight="700" letter-spacing="2" fill="#506b7e">学祭展示｜技術解説</text>
-<text x="80" y="158" font-size="58" font-weight="700">AI Task Planner</text>
-<text x="80" y="195" font-size="21" fill="#46525c">複数の課題を整理し、AI分析と優先順位づけで取り組む順番を決めるタスク管理アプリです。</text>`r`n<line x1="80" y1="220" x2="1120" y2="220" stroke="#506b7e" stroke-width="4"/>
-<!-- central dividers -->
-<line x1="600" y1="230" x2="600" y2="1617" stroke="#aebbc3" stroke-width="2"/>
-<line x1="80" y1="920" x2="1120" y2="920" stroke="#aebbc3" stroke-width="2"/>
-<!-- TOP LEFT: API -->
-<text x="80" y="270" font-size="23" font-weight="700" fill="#506b7e">01　API とは</text>
-<text x="80" y="320" font-size="27" font-weight="700">ソフトウェア同士の「窓口」</text>
-<text x="80" y="361" font-size="21" fill="#46525c">決められたルールでデータをやり取りする</text>
-<text x="80" y="393" font-size="21" fill="#46525c">仕組みです。依頼を送ると、相手のサービス</text>
-<text x="80" y="425" font-size="21" fill="#46525c">から結果が返ってきます。</text>
-<text x="80" y="480" font-size="23" font-weight="700">このアプリでの流れ</text>
-<!-- vertical flow -->
-<line x1="106" y1="530" x2="106" y2="700" stroke="#c3cdd2" stroke-width="3"/>
-<g fill="#506b7e"><circle cx="106" cy="535" r="17"/><circle cx="106" cy="590" r="17"/><circle cx="106" cy="645" r="17"/><circle cx="106" cy="700" r="17"/></g>
-<g fill="#fff" font-size="16" text-anchor="middle" font-weight="700"><text x="106" y="541">1</text><text x="106" y="596">2</text><text x="106" y="651">3</text><text x="106" y="706">4</text></g>
-<text x="140" y="542" font-size="22" font-weight="700">アプリが課題文を送る</text>
-<text x="140" y="570" font-size="18" fill="#59656e">POST /api/analyze</text>
-<text x="140" y="597" font-size="22" font-weight="700">Next.js サーバーが中継</text>
-<text x="140" y="625" font-size="18" fill="#59656e">APIキーを使って Gemini に接続</text>
-<text x="140" y="652" font-size="22" font-weight="700">Gemini API が分析</text>
-<text x="140" y="680" font-size="18" fill="#59656e">課題文を送信し、結果を受け取る</text>
-<text x="140" y="707" font-size="22" font-weight="700">分析結果をアプリに返す</text>
-<text x="80" y="773" font-size="20" fill="#46525c">APIキーはサーバー側で管理し、ブラウザには</text>
-<text x="80" y="805" font-size="20" fill="#46525c">出しません。Geminiの結果は JSON で受け取ります。</text>
-<!-- TOP RIGHT: AI -->
-<text x="650" y="270" font-size="23" font-weight="700" fill="#506b7e">03　Gemini AI の役割</text>
-<text x="650" y="320" font-size="26" font-weight="700">課題文の意味を読み取り、作業に分ける</text>
-<text x="650" y="361" font-size="20" fill="#46525c">使用モデル：gemini-3.5-flash-lite</text>
-<text x="650" y="414" font-size="22" font-weight="700">AIが作る情報</text>
-<circle cx="661" cy="455" r="4" fill="#506b7e"/><text x="678" y="462" font-size="21" fill="#46525c">課題の事実に沿った日本語要約</text>
-<circle cx="661" cy="499" r="4" fill="#506b7e"/><text x="678" y="506" font-size="21" fill="#46525c">難易度・所要時間の推定</text>
-<circle cx="661" cy="543" r="4" fill="#506b7e"/><text x="678" y="550" font-size="21" fill="#46525c">順番つきサブタスクと説明</text>
-<circle cx="661" cy="587" r="4" fill="#506b7e"/><text x="678" y="594" font-size="21" fill="#46525c">取り組みのヒント</text>
-<text x="650" y="650" font-size="20" fill="#59656e">タスク名が空なら内容から提案し、入力済み</text>
-<text x="650" y="681" font-size="20" fill="#59656e">ならその名前を維持。返答 JSON はアプリで</text>
-<text x="650" y="712" font-size="20" fill="#59656e">形式を検証します。</text>
-<text x="650" y="773" font-size="20" fill="#46525c">課題文は分析のため Google Gemini API に送信。</text>
-<text x="650" y="805" font-size="20" fill="#46525c">分析結果は Supabase に保存されます。</text>
-<!-- BOTTOM LEFT: extraction -->
-<text x="80" y="984" font-size="23" font-weight="700" fill="#506b7e">02　資料から文字を取り出す</text>
-<text x="80" y="1026" font-size="20" fill="#46525c">JavaScript のライブラリを使い、ブラウザ内で</text>
-<text x="80" y="1056" font-size="20" fill="#46525c">ファイルから文字情報を抽出します。</text>
-<text x="80" y="1120" font-size="25" font-weight="700">PDF　｜　PDF.js</text>
-<text x="80" y="1158" font-size="21" fill="#46525c">PDFに含まれる文字をページごとに抽出。</text>
-<text x="80" y="1194" font-size="20" fill="#59656e">上限：10 MB・50ページ・30,000文字</text>
-<text x="80" y="1241" font-size="21" font-weight="700">スキャン画像だけのPDFは読めません。</text>
-<text x="80" y="1274" font-size="19" fill="#59656e">OCR（画像の文字認識）は未対応。</text>
-<line x1="80" y1="1312" x2="560" y2="1312" stroke="#d6dde1" stroke-width="2"/>
-<text x="80" y="1360" font-size="25" font-weight="700">Word　｜　Mammoth</text>
-<text x="80" y="1398" font-size="21" fill="#46525c">.docx の本文テキストを抽出。</text>
-<text x="80" y="1434" font-size="20" fill="#59656e">上限：10 MB・30,000文字</text>
-<text x="80" y="1472" font-size="20" fill="#59656e">旧形式 .doc と画像ファイルの直接解析は</text>
-<text x="80" y="1502" font-size="20" fill="#59656e">未対応です。</text>
-<!-- BOTTOM RIGHT: priority -->
-<text x="650" y="984" font-size="23" font-weight="700" fill="#506b7e">04　優先順位の決め方</text>
-<text x="650" y="1032" font-size="26" font-weight="700">優先順位は AI ではなく、</text>
-<text x="650" y="1068" font-size="26" font-weight="700">アプリ内の計算で決めます。</text>
-<text x="650" y="1123" font-size="21" fill="#46525c">考慮する情報</text>
-<circle cx="661" cy="1160" r="4" fill="#506b7e"/><text x="678" y="1167" font-size="21" fill="#46525c">締切までの日数と残り作業量</text>
-<circle cx="661" cy="1201" r="4" fill="#506b7e"/><text x="678" y="1208" font-size="21" fill="#46525c">難易度と所要時間</text>
-<circle cx="661" cy="1242" r="4" fill="#506b7e"/><text x="678" y="1249" font-size="21" fill="#46525c">作業の前後関係</text>
-<text x="650" y="1305" font-size="20" fill="#59656e">急ぎの課題を優先しつつ、複数の課題を</text>
-<text x="650" y="1336" font-size="20" fill="#59656e">交互に進めやすい順に並べます。</text>
-<text x="650" y="1391" font-size="20" font-weight="700" fill="#506b7e">作業完了・タスク更新のあとに再計算</text>
-<text x="650" y="1426" font-size="19" fill="#59656e">この再計算では Gemini API を呼びません。</text>
-<line x1="650" y1="1462" x2="1120" y2="1462" stroke="#d6dde1" stroke-width="2"/>
-<text x="650" y="1508" font-size="20" font-weight="700">使用技術</text>
-<text x="650" y="1544" font-size="19" fill="#46525c">Next.js / React / TypeScript</text>
-<text x="650" y="1576" font-size="19" fill="#46525c">Gemini API / PDF.js / Mammoth / Supabase</text>
+<image x="995" y="73" width="125" height="125" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANgAAADYAQMAAACz7r+uAAAABlBMVEX///8CAwR6BpDKAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAWBJREFUWIXtlzESgzAMBOXKz/BPAf/Uz6BC0UkyENKmuAIPE8BLZszN6WRE3vGOv42qNg6RRaTsOFZMDD6G0yJtk9Z1FB3LnGRjq93XYau3XwNL1YOW2TvYhWvNz8relJiJG9cs24PJ0y8czGuswhZx/NQfB5N8ExN6u1QWOoZ7X7S/TJ/5RcfgWrihQ99mzx3uYzo2M8usEFr7NR9D+p+KpycsueiYT5knVu+m5glN3ckYmhOujJnuUjNn+VjTrCuIniGrfCyLyiSWAqHRq/rpCSI2EAGhePUyk8svRCwqyh28IQjg3asT8DBsoRpqTGPDh+1pUT7mhojVh8rw7pVnNAyLxmy4NvIr/0XF5hPrnkLLrVcRsWxRmQgd/fWWWUQMJy8tkUh/twghiz2KdywP2a/6I2OoLvVOEGXGysIN8aWnT61JmMxGlW3gtudjYllj2fV9e1oe9cfA3vGOv4wPO0DkNsfamAMAAAAASUVORK5CYII=" preserveAspectRatio="xMidYMid meet"/>
+<text x="80" y="163" font-size="72" font-weight="700">AI Task Planner</text>
+
+<!-- 2-column / 2-row reading order dividers -->
+<line x1="600" y1="230" x2="600" y2="1642" stroke="#3479AF" stroke-width="3"/>
+<line x1="80" y1="954" x2="560" y2="954" stroke="#3479AF" stroke-width="4" opacity=".9"/>
+<line x1="650" y1="920" x2="1120" y2="920" stroke="#3479AF" stroke-width="4" opacity=".9"/>
+
+<!-- 01 Overview and how to: upper left -->
+<text x="80" y="270" font-size="30" font-weight="700" fill="#3479AF">01　アプリの概要と使い方</text><text x="80" y="317" font-size="21" font-weight="700">複数の課題を登録し、AIで要約・作業分解。</text><text x="80" y="350" font-size="20" fill="#202020">締切や作業量から優先度をつけ、次の作業を提案。</text><text x="80" y="381" font-size="20" fill="#202020">学生向けのタスク管理アプリです。</text>
+
+
+
+<text x="80" y="430" font-size="23" font-weight="700">使い方</text>
+<g fill="#3479AF" font-size="19" font-weight="700" text-anchor="middle">
+ <circle cx="98" cy="466" r="15"/><text x="98" y="472" fill="#FFFFFF">1</text>
+ <circle cx="98" cy="564" r="15"/><text x="98" y="568" fill="#FFFFFF">2</text>
+ <circle cx="98" cy="636" r="15"/><text x="98" y="640" fill="#FFFFFF">3</text>
+ <circle cx="98" cy="740" r="15"/><text x="98" y="744" fill="#FFFFFF">4</text>
+ <circle cx="98" cy="871" r="15"/><text x="98" y="875" fill="#FFFFFF">5</text>
+</g>
+<text x="128" y="470" font-size="22" font-weight="700">課題を登録</text>
+<text x="128" y="503" font-size="19" fill="#202020">締切と概要を入力。タスク名は任意。</text><text x="128" y="533" font-size="19" fill="#202020">PDF・Wordも添付できます。</text>
+<text x="128" y="568" font-size="22" font-weight="700">AI分析</text>
+<text x="128" y="601" font-size="20" fill="#202020">登録後に資料抽出とAI分析を開始します。</text>
+<text x="128" y="640" font-size="22" font-weight="700">タスク一覧で内容を確認・編集</text>
+<text x="128" y="673" font-size="19" fill="#202020">入力した概要や抽出した文章を確認・編集。</text>
+<text x="128" y="705" font-size="19" fill="#202020">細かなAI分析はプラン画面で確認します。</text>
+<text x="128" y="744" font-size="22" font-weight="700">プラン画面で作業</text>
+<text x="128" y="777" font-size="20" fill="#202020">サブタスクの内容・説明・見積もりを確認。</text>
+<text x="128" y="809" font-size="19" fill="#202020">「まずはこれから」に次の作業を表示。</text>
+<text x="128" y="841" font-size="19" fill="#202020">完了を記録すると優先順位が更新されます。</text>
+<text x="128" y="875" font-size="22" font-weight="700">カレンダーで締切を確認</text>
+<text x="128" y="908" font-size="20" fill="#202020">登録したタスクの締切を見渡せます。</text>
+<!-- 02 Analysis flow and API: lower left -->
+<text x="80" y="1017" font-size="30" font-weight="700" fill="#3479AF">02　分析の流れとAPI</text>
+<text x="80" y="1062" font-size="22" font-weight="700">APIは、ソフトウェア間のデータの窓口。</text>
+<text x="80" y="1096" font-size="20" fill="#202020">決められた形式で依頼を送り、結果を受け取ります。</text>
+<text x="80" y="1147" font-size="22" font-weight="700">このアプリの分析フロー</text>
+<line x1="105" y1="1205" x2="105" y2="1370" stroke="#3479AF" stroke-width="3" opacity=".35"/>
+<g fill="#3479AF"><circle cx="105" cy="1185" r="14"/><circle cx="105" cy="1240" r="14"/><circle cx="105" cy="1295" r="14"/><circle cx="105" cy="1350" r="14"/></g>
+<g fill="#FFFFFF" font-size="16" text-anchor="middle" font-weight="700"><text x="105" y="1190">1</text><text x="105" y="1245">2</text><text x="105" y="1300">3</text><text x="105" y="1355">4</text></g>
+<text x="135" y="1212" font-size="21" font-weight="700">課題文（概要・抽出テキスト）を送信</text>
+<text x="135" y="1267" font-size="21" font-weight="700">Geminiに分析を依頼</text>
+<text x="135" y="1322" font-size="21" font-weight="700">決められたJSON形式で結果を受信</text>
+<text x="135" y="1377" font-size="21" font-weight="700">アプリが形式を検証して表示</text>
+<text x="80" y="1415" font-size="22" font-weight="700">AIへの依頼</text>
+<text x="80" y="1450" font-size="19" fill="#202020">事実に沿う要約、難易度・時間の推定。</text>
+<text x="80" y="1480" font-size="19" fill="#202020">順序つきサブタスク、作業ごとの説明、ヒント。</text>
+<text x="80" y="1510" font-size="19" fill="#202020">タスク名は維持または提案。記載のない条件は加えません。</text>
+<text x="80" y="1565" font-size="19" fill="#202020">課題文はGeminiに送信、分析結果はSupabaseに保存。</text>
+<text x="80" y="1597" font-size="19" fill="#202020">優先順位の再計算にはGemini APIを使いません。</text>
+<!-- 03 Code and extraction: upper right -->
+<text x="650" y="270" font-size="30" font-weight="700" fill="#3479AF">03　コードとテキスト抽出</text>
+<text x="650" y="316" font-size="22" font-weight="700">ファイルの文字をブラウザ上で抽出</text>
+<text x="650" y="353" font-size="20" fill="#202020">PDF.js（JavaScript）</text>
+<text x="650" y="383" font-size="20" fill="#202020">PDFに含まれる文字情報を抽出</text>
+<text x="650" y="413" font-size="19" fill="#202020">上限 10MB・50ページ・30,000文字</text>
+<text x="650" y="449" font-size="20" fill="#202020">Mammoth</text>
+<text x="650" y="479" font-size="20" fill="#202020">Word（.docx）の本文テキストを抽出</text>
+<text x="650" y="509" font-size="19" fill="#202020">上限 10MB・30,000文字</text>
+<text x="650" y="550" font-size="19" font-weight="700">スキャンPDFのOCR・画像解析は非対応。</text><text x="650" y="578" font-size="19" font-weight="700">旧形式 .doc も読み取れません。</text>
+
+<text x="650" y="652" font-size="22" font-weight="700">分析・保存の実装</text>
+<text x="650" y="690" font-size="19" fill="#202020">抽出テキストを含む課題情報を分析APIへ送信。</text>
+<text x="650" y="720" font-size="19" fill="#202020">ファイル自体ではなく、抽出した文字を送ります。</text>
+<text x="650" y="770" font-size="19" fill="#202020">GeminiにはJSON形式を指定。</text>
+<text x="650" y="800" font-size="19" fill="#202020">サーバー側で必須項目・値の範囲を検証。</text>
+<text x="650" y="845" font-size="18" fill="#202020">画面：Next.js / React / TypeScript</text>
+<text x="650" y="874" font-size="18" fill="#202020">抽出：PDF.js / Mammoth　保存：Supabase</text>
+<!-- 04 Priority score: lower right -->
+<text x="650" y="983" font-size="30" font-weight="700" fill="#3479AF">04　優先順位の計算</text>
+<text x="650" y="1028" font-size="20" fill="#202020">次の未完了サブタスクを候補にし、点数順に並べます。</text>
+<text x="650" y="1073" font-size="21" font-weight="700">締切点</text>
+<text x="650" y="1104" font-size="18" fill="#202020">今日 100　｜　1日後 90</text>
+<text x="650" y="1131" font-size="18" fill="#202020">2〜3日後 76　｜　4〜7日後 62</text>
+<text x="650" y="1158" font-size="18" fill="#202020">8〜14日後 48　｜　15〜30日後 36</text><text x="650" y="1185" font-size="18" fill="#202020">31日以上 24　｜　期限超過 110＋最大20</text>
+<text x="650" y="1225" font-size="21" font-weight="700">残作業点</text>
+<text x="650" y="1255" font-size="18" fill="#202020">1日あたり残作業10分ごとに +1点（最大24点）</text>
+<text x="650" y="1283" font-size="18" fill="#202020">例：残り120分・締切まで2日 → 4点</text>
+<text x="650" y="1323" font-size="21" font-weight="700">サブタスク負荷点</text>
+<text x="650" y="1353" font-size="18" fill="#202020">難易度1段階ごと +1.5点。時間は10分を基準に</text>
+<text x="650" y="1381" font-size="18" fill="#202020">2倍ごと +1.5点（時間分は最大6点）。</text>
+<text x="650" y="1421" font-size="21" font-weight="700">ボーナス・連続作業の調整</text>
+<text x="650" y="1451" font-size="18" fill="#202020">残作業 ≤60分：+20　｜　≤120分：+9</text>
+<text x="650" y="1479" font-size="18" fill="#202020">サブタスク ≤20分：+3</text>
+<text x="650" y="1507" font-size="18" fill="#202020">同じ課題の残作業 >60分：連続を抑えて減点</text>
+<text x="650" y="1535" font-size="18" fill="#202020">締切点24なら −20.2点、100なら −5点</text>
+<text x="650" y="1563" font-size="18" fill="#202020">残作業 ≤60分なら完了ボーナス +16点</text>
+<text x="650" y="1603" font-size="18" font-weight="700" fill="#3479AF">作業完了・タスク更新後に再計算（AI APIなし）</text>
 </g>
 </svg>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

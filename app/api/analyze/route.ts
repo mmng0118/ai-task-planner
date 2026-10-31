@@ -57,9 +57,7 @@ export async function POST(request: Request) {
     const ai = new GoogleGenAI({ apiKey, vertexai: false });
     const body = (await request.json()) as AnalyzeRequest;
 
-    const interaction = await ai.interactions.create({
-      model: "gemini-3.5-flash-lite",
-      input: `学習タスクを分析し、指定されたJSON形式で日本語の結果を返してください。入力に書かれた具体的な内容を残し、曖昧な一般論に置き換えないでください。
+    const input = `学習タスクを分析し、指定されたJSON形式で日本語の結果を返してください。入力に書かれた具体的な内容を残し、曖昧な一般論に置き換えないでください。
 各タスクについて:
 - title: 入力にタイトルがある場合は、文字を変更せずそのまま返す。タイトルが空の場合は、概要や資料の内容から課題の中心が伝わる短い日本語タイトル（目安10〜25字）を作る。入力にない課題内容を推測して追加しない。
 - summary: 入力に書かれた事実を日本語で要約する。目安は100〜180字。課題で何を作る・解く・提出するのか、明記された数・条件・提出形式・評価基準を省かず、読んだ人が作業内容を理解できる長さにする。短い入力は無理に引き延ばさない。推測や助言は混ぜない。
@@ -77,18 +75,16 @@ export async function POST(request: Request) {
 - idは入力値をそのまま使う。
 
 タスク:
-${JSON.stringify(body.tasks)}`,
-      response_format: {
-        type: "text",
-        mime_type: "application/json",
-        schema: responseSchema,
-      },
-      generation_config: {
-        thinking_level: "minimal",
-        max_output_tokens: 2400,
-      },
-      store: false,
-    });
+${JSON.stringify(body.tasks)}`;
+
+    let interaction: Awaited<ReturnType<typeof createAnalysis>>;
+    try {
+      interaction = await createAnalysis(ai, "gemini-3.5-flash-lite", input);
+    } catch (error) {
+      if (!isRateLimitError(error)) throw error;
+      console.warn("Primary Gemini model rate limited; retrying with gemini-2.5-flash.");
+      interaction = await createAnalysis(ai, "gemini-2.5-flash", input);
+    }
 
     if (!interaction.output_text) {
       return NextResponse.json(
@@ -135,6 +131,33 @@ ${JSON.stringify(body.tasks)}`,
       { status: 500 },
     );
   }
+}
+
+function createAnalysis(ai: GoogleGenAI, model: string, input: string) {
+  return ai.interactions.create({
+    model,
+    input,
+    response_format: {
+      type: "text",
+      mime_type: "application/json",
+      schema: responseSchema,
+    },
+    generation_config: {
+      thinking_level: "minimal",
+      max_output_tokens: 2400,
+    },
+    store: false,
+  });
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  return (
+    error.status === 429 ||
+    error.code === 429 ||
+    error.code === "RESOURCE_EXHAUSTED" ||
+    (typeof error.message === "string" && /\b429\b|RESOURCE_EXHAUSTED/i.test(error.message))
+  );
 }
 
 function isAnalyzeResponse(value: unknown): value is AnalyzeResponse {
